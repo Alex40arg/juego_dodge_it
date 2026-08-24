@@ -1,0 +1,988 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Esquivá - Práctica de movimiento del mouse</title>
+  <style>
+    :root {
+      --bg-deep: #050c18;
+      --bg: #091426;
+      --panel: #0d1c31;
+      --panel-light: #132842;
+      --line: #29435f;
+      --text: #f7fbff;
+      --muted: #aec2d8;
+      --cyan: #38e8ff;
+      --green: #57ee9a;
+      --yellow: #ffd75e;
+      --danger: #ff5576;
+      --sidebar-width: clamp(240px, 19vw, 300px);
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: var(--bg-deep);
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 12% 18%, rgba(41, 129, 196, 0.16), transparent 30%),
+        radial-gradient(circle at 85% 80%, rgba(21, 193, 175, 0.1), transparent 35%),
+        var(--bg-deep);
+    }
+
+    #app {
+      width: 100vw;
+      height: 100dvh;
+      min-height: 420px;
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .hud {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: clamp(18px, 2vw, 28px);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background:
+        linear-gradient(150deg, rgba(20, 48, 78, 0.94), rgba(7, 20, 37, 0.98)),
+        var(--panel);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
+    }
+
+    .brand-kicker {
+      margin: 0 0 2px;
+      color: var(--cyan);
+      font-size: clamp(0.72rem, 0.8vw, 0.9rem);
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 3.5vw, 3.3rem);
+      line-height: 0.96;
+      letter-spacing: -0.045em;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: clamp(0.9rem, 1.1vw, 1.05rem);
+      line-height: 1.4;
+    }
+
+    .status-card {
+      padding: 16px;
+      border: 1px solid rgba(95, 137, 177, 0.42);
+      border-radius: 17px;
+      background: rgba(4, 14, 27, 0.48);
+    }
+
+    .status-label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    .time-value {
+      color: var(--yellow);
+      font-size: clamp(2.6rem, 4.2vw, 4rem);
+      font-weight: 800;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 22px rgba(255, 215, 94, 0.24);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat {
+      min-width: 0;
+      padding: 13px 12px;
+      border: 1px solid rgba(95, 137, 177, 0.32);
+      border-radius: 15px;
+      background: rgba(4, 14, 27, 0.35);
+    }
+
+    .stat strong {
+      display: block;
+      overflow: hidden;
+      font-size: clamp(1.4rem, 2vw, 2rem);
+      line-height: 1.15;
+      text-overflow: ellipsis;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #statusValue {
+      font-size: clamp(1rem, 1.25vw, 1.35rem);
+    }
+
+    .stat span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .legend {
+      margin-top: auto;
+      display: grid;
+      gap: 12px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(95, 137, 177, 0.28);
+    }
+
+    .legend-row {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 10px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.25;
+    }
+
+    .legend-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+    }
+
+    .legend-dot.player {
+      border: 3px solid #fff;
+      background: var(--cyan);
+      box-shadow: 0 0 12px rgba(56, 232, 255, 0.65);
+    }
+
+    .legend-dot.obstacle {
+      border: 3px solid rgba(255, 255, 255, 0.82);
+      background: var(--danger);
+      box-shadow: 0 0 12px rgba(255, 85, 118, 0.48);
+    }
+
+    .play-shell {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid #355778;
+      border-radius: 24px;
+      background: #081526;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
+      cursor: none;
+    }
+
+    .play-shell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(82, 134, 174, 0.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(82, 134, 174, 0.055) 1px, transparent 1px),
+        radial-gradient(circle at 50% 50%, rgba(20, 67, 102, 0.35), transparent 62%);
+      background-size: 42px 42px, 42px 42px, auto;
+      z-index: 0;
+    }
+
+    .play-shell.is-impact {
+      animation: impactFlash 420ms ease-out;
+    }
+
+    @keyframes impactFlash {
+      0%, 100% { box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34); }
+      30% { box-shadow: inset 0 0 110px rgba(255, 54, 91, 0.56), 0 0 32px rgba(255, 54, 91, 0.68); }
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      pointer-events: none;
+      background: rgba(4, 12, 23, 0.28);
+      transition: background 160ms ease;
+    }
+
+    .overlay.is-hidden {
+      display: none;
+    }
+
+    .overlay.is-interactive {
+      pointer-events: auto;
+      cursor: default;
+      background: rgba(4, 12, 23, 0.76);
+    }
+
+    .message-card {
+      width: min(620px, 92%);
+      padding: clamp(24px, 4vw, 44px);
+      text-align: center;
+      border: 1px solid rgba(107, 158, 202, 0.62);
+      border-radius: 25px;
+      background: linear-gradient(145deg, rgba(18, 44, 72, 0.97), rgba(7, 20, 36, 0.98));
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
+    }
+
+    .message-icon {
+      width: 78px;
+      height: 78px;
+      margin: 0 auto 18px;
+      display: grid;
+      place-items: center;
+      border: 4px solid #fff;
+      border-radius: 50%;
+      color: #062135;
+      background: var(--cyan);
+      font-size: 2rem;
+      font-weight: 900;
+      box-shadow: 0 0 30px rgba(56, 232, 255, 0.58);
+    }
+
+    .message-title {
+      margin: 0;
+      font-size: clamp(2rem, 4.7vw, 4.2rem);
+      line-height: 1;
+      letter-spacing: -0.035em;
+    }
+
+    .message-text {
+      max-width: 480px;
+      margin: 16px auto 0;
+      color: #c5d8e9;
+      font-size: clamp(1.05rem, 1.7vw, 1.35rem);
+      line-height: 1.45;
+    }
+
+    .impact-message {
+      color: #fff;
+      font-size: clamp(2.7rem, 6.2vw, 5.4rem);
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      text-shadow: 0 0 18px rgba(255, 59, 96, 0.92), 0 0 60px rgba(255, 59, 96, 0.62);
+    }
+
+    .results {
+      margin: 24px 0 8px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .result-box {
+      padding: 15px;
+      border-radius: 15px;
+      background: rgba(3, 12, 24, 0.5);
+    }
+
+    .result-box strong {
+      display: block;
+      color: var(--yellow);
+      font-size: 1.7rem;
+    }
+
+    .result-box span {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    button {
+      min-width: 220px;
+      margin-top: 22px;
+      padding: 15px 24px;
+      border: 0;
+      border-radius: 14px;
+      color: #032033;
+      background: linear-gradient(180deg, #77f2ff, #32cde4);
+      font: inherit;
+      font-size: 1.12rem;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(27, 205, 231, 0.28);
+    }
+
+    button:hover,
+    button:focus-visible {
+      filter: brightness(1.1);
+      outline: 4px solid rgba(255, 255, 255, 0.75);
+      outline-offset: 3px;
+    }
+
+    .tuning-note {
+      margin: 0;
+      color: #829ab2;
+      font-size: 0.72rem;
+      line-height: 1.35;
+    }
+
+    @media (max-width: 760px) {
+      :root {
+        --sidebar-width: 190px;
+      }
+
+      #app {
+        gap: 8px;
+        padding: 8px;
+      }
+
+      .hud {
+        gap: 10px;
+        padding: 14px;
+        border-radius: 18px;
+      }
+
+      .play-shell {
+        border-radius: 18px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .legend-row {
+        grid-template-columns: 27px 1fr;
+        font-size: 0.78rem;
+      }
+
+      .legend-dot {
+        width: 23px;
+        height: 23px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main id="app">
+    <aside class="hud" aria-label="Información de la partida">
+      <header>
+        <p class="brand-kicker">Práctica de mouse</p>
+        <h1>Esquivá</h1>
+        <p class="subtitle">Mové el círculo luminoso y evitá los obstáculos.</p>
+      </header>
+
+      <section class="status-card" aria-live="polite">
+        <span class="status-label">Tiempo restante</span>
+        <strong class="time-value" id="timeValue">1:00</strong>
+      </section>
+
+      <section class="stats">
+        <div class="stat">
+          <strong id="impactValue">0</strong>
+          <span>Impactos</span>
+        </div>
+        <div class="stat">
+          <strong id="obstacleValue">1</strong>
+          <span>Obstáculos</span>
+        </div>
+        <div class="stat">
+          <strong id="streakValue">0 s</strong>
+          <span>Mejor tramo</span>
+        </div>
+        <div class="stat">
+          <strong id="statusValue">Listo</strong>
+          <span>Estado</span>
+        </div>
+      </section>
+
+      <div class="legend" aria-label="Referencias visuales">
+        <div class="legend-row">
+          <span class="legend-dot player" aria-hidden="true"></span>
+          <span>Este círculo sos vos</span>
+        </div>
+        <div class="legend-row">
+          <span class="legend-dot obstacle" aria-hidden="true"></span>
+          <span>Evitá los círculos de colores</span>
+        </div>
+        <p class="tuning-note">Versión de prueba · Los tamaños y la velocidad pueden modificarse al comienzo del código.</p>
+      </div>
+    </aside>
+
+    <section class="play-shell" id="playShell" aria-label="Área de juego">
+      <canvas id="gameCanvas" aria-label="Juego de práctica para mover el mouse"></canvas>
+      <div class="overlay" id="overlay" aria-live="assertive">
+        <div class="message-card" id="messageCard">
+          <div class="message-icon" aria-hidden="true">✦</div>
+          <h2 class="message-title">Mové el mouse</h2>
+          <p class="message-text">Entrá en el campo y mové el círculo luminoso para comenzar. No hace falta hacer clic.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    /* ================================================================
+       AJUSTES RÁPIDOS DE LA PRUEBA
+       Cambiá solamente estos valores para probar tamaños y dificultad.
+       Todas las medidas de tamaño y velocidad están expresadas en píxeles.
+       ================================================================ */
+    const GAME_CONFIG = Object.freeze({
+      PLAYER_RADIUS: 23,             // Tamaño del círculo que mueve el usuario.
+      OBSTACLE_RADIUS: 29,           // Tamaño de cada obstáculo.
+      OBSTACLE_SPEED: 112,           // Velocidad de los obstáculos (píxeles/segundo).
+      ROUND_DURATION_SECONDS: 60,    // Duración de esta prueba.
+      OBSTACLE_APPEAR_AT: [0, 15, 30, 45],
+      IMPACT_PAUSE_MS: 900,          // Duración del cartel de impacto.
+      PROTECTION_MS: 1750,           // Protección total después de un impacto.
+      MAX_FRAME_SECONDS: 0.035,
+      PLAYER_COLOR: "#38e8ff",
+      OBSTACLE_COLORS: ["#ff5576", "#ff9f43", "#ffda57", "#d96cff"]
+    });
+
+    const canvas = document.getElementById("gameCanvas");
+    const context = canvas.getContext("2d");
+    const playShell = document.getElementById("playShell");
+    const overlay = document.getElementById("overlay");
+    const messageCard = document.getElementById("messageCard");
+    const timeValue = document.getElementById("timeValue");
+    const impactValue = document.getElementById("impactValue");
+    const obstacleValue = document.getElementById("obstacleValue");
+    const streakValue = document.getElementById("streakValue");
+    const statusValue = document.getElementById("statusValue");
+
+    const PHASE = Object.freeze({
+      READY: "ready",
+      RUNNING: "running",
+      IMPACT: "impact",
+      FINISHED: "finished"
+    });
+
+    const player = {
+      x: 0,
+      y: 0,
+      previousX: 0,
+      previousY: 0,
+      radius: GAME_CONFIG.PLAYER_RADIUS
+    };
+
+    let arenaWidth = 1;
+    let arenaHeight = 1;
+    let phase = PHASE.READY;
+    let pointerInside = false;
+    let obstacles = [];
+    let impacts = 0;
+    let remainingMs = GAME_CONFIG.ROUND_DURATION_SECONDS * 1000;
+    let impactPauseRemainingMs = 0;
+    let protectionRemainingMs = 0;
+    let currentStreakMs = 0;
+    let bestStreakMs = 0;
+    let lastFrameTimestamp = 0;
+
+    function clamp(value, minimum, maximum) {
+      return Math.min(Math.max(value, minimum), maximum);
+    }
+
+    function formatTime(milliseconds) {
+      const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = String(totalSeconds % 60).padStart(2, "0");
+      return `${minutes}:${seconds}`;
+    }
+
+    function formatSeconds(milliseconds) {
+      return `${Math.floor(Math.max(0, milliseconds) / 1000)} s`;
+    }
+
+    function setStatus(text) {
+      statusValue.textContent = text;
+    }
+
+    function updateHud() {
+      timeValue.textContent = formatTime(remainingMs);
+      impactValue.textContent = String(impacts);
+      obstacleValue.textContent = String(obstacles.length || 1);
+      streakValue.textContent = formatSeconds(bestStreakMs);
+    }
+
+    function showReadyMessage() {
+      overlay.className = "overlay";
+      messageCard.innerHTML = `
+        <div class="message-icon" aria-hidden="true">✦</div>
+        <h2 class="message-title">Mové el mouse</h2>
+        <p class="message-text">Entrá en el campo y mové el círculo luminoso para comenzar. No hace falta hacer clic.</p>
+      `;
+    }
+
+    function showImpactMessage() {
+      overlay.className = "overlay";
+      messageCard.innerHTML = '<div class="impact-message">¡IMPACTO!</div>';
+    }
+
+    function showOutsideMessage() {
+      overlay.className = "overlay";
+      messageCard.innerHTML = `
+        <div class="message-icon" aria-hidden="true">↩</div>
+        <h2 class="message-title">Volvé al campo</h2>
+        <p class="message-text">La partida está en pausa. Volvé a entrar con el mouse para continuar.</p>
+      `;
+    }
+
+    function showFinishedMessage() {
+      const finalStreak = Math.max(bestStreakMs, currentStreakMs);
+      overlay.className = "overlay is-interactive";
+      messageCard.innerHTML = `
+        <div class="message-icon" aria-hidden="true">✓</div>
+        <h2 class="message-title">¡Práctica terminada!</h2>
+        <p class="message-text">Completaste un minuto de movimiento y precisión.</p>
+        <div class="results">
+          <div class="result-box"><strong>${impacts}</strong><span>Impactos</span></div>
+          <div class="result-box"><strong>${formatSeconds(finalStreak)}</strong><span>Mejor tramo</span></div>
+        </div>
+        <button id="restartButton" type="button">Volver a probar</button>
+      `;
+
+      const restartButton = document.getElementById("restartButton");
+      restartButton.addEventListener("pointermove", (event) => event.stopPropagation());
+      restartButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        resetGame();
+      });
+    }
+
+    function hideOverlay() {
+      overlay.className = "overlay is-hidden";
+    }
+
+    function resizeCanvas() {
+      const rectangle = playShell.getBoundingClientRect();
+      arenaWidth = Math.max(1, rectangle.width);
+      arenaHeight = Math.max(1, rectangle.height);
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+
+      canvas.width = Math.round(arenaWidth * pixelRatio);
+      canvas.height = Math.round(arenaHeight * pixelRatio);
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+
+      player.x = clamp(player.x || arenaWidth / 2, player.radius, arenaWidth - player.radius);
+      player.y = clamp(player.y || arenaHeight / 2, player.radius, arenaHeight - player.radius);
+      player.previousX = player.x;
+      player.previousY = player.y;
+
+      for (const obstacle of obstacles) {
+        obstacle.x = clamp(obstacle.x, obstacle.radius, arenaWidth - obstacle.radius);
+        obstacle.y = clamp(obstacle.y, obstacle.radius, arenaHeight - obstacle.radius);
+      }
+    }
+
+    function createObstacle(index) {
+      const positions = [
+        [0.72, 0.26],
+        [0.31, 0.72],
+        [0.78, 0.76],
+        [0.27, 0.28],
+        [0.52, 0.18],
+        [0.52, 0.82]
+      ];
+      const angles = [2.45, -0.65, -2.35, 0.72, 2.1, -1.05];
+      const position = positions[index % positions.length];
+      const angle = angles[index % angles.length];
+      const radius = GAME_CONFIG.OBSTACLE_RADIUS;
+
+      return {
+        x: clamp(arenaWidth * position[0], radius, arenaWidth - radius),
+        y: clamp(arenaHeight * position[1], radius, arenaHeight - radius),
+        radius,
+        velocityX: Math.cos(angle) * GAME_CONFIG.OBSTACLE_SPEED,
+        velocityY: Math.sin(angle) * GAME_CONFIG.OBSTACLE_SPEED,
+        color: GAME_CONFIG.OBSTACLE_COLORS[index % GAME_CONFIG.OBSTACLE_COLORS.length]
+      };
+    }
+
+    function addObstacle() {
+      obstacles.push(createObstacle(obstacles.length));
+      obstacleValue.textContent = String(obstacles.length);
+    }
+
+    function prepareObstacles() {
+      obstacles = [];
+      addObstacle();
+    }
+
+    function resetGame() {
+      phase = PHASE.READY;
+      impacts = 0;
+      remainingMs = GAME_CONFIG.ROUND_DURATION_SECONDS * 1000;
+      impactPauseRemainingMs = 0;
+      protectionRemainingMs = 0;
+      currentStreakMs = 0;
+      bestStreakMs = 0;
+      player.x = arenaWidth / 2;
+      player.y = arenaHeight / 2;
+      player.previousX = player.x;
+      player.previousY = player.y;
+      prepareObstacles();
+      playShell.classList.remove("is-impact");
+      setStatus("Listo");
+      updateHud();
+      showReadyMessage();
+    }
+
+    function startGame() {
+      phase = PHASE.RUNNING;
+      currentStreakMs = 0;
+      setStatus("Jugando");
+      hideOverlay();
+    }
+
+    function finishGame() {
+      bestStreakMs = Math.max(bestStreakMs, currentStreakMs);
+      remainingMs = 0;
+      phase = PHASE.FINISHED;
+      setStatus("Finalizado");
+      updateHud();
+      showFinishedMessage();
+    }
+
+    function registerImpact() {
+      if (phase !== PHASE.RUNNING || protectionRemainingMs > 0) {
+        return;
+      }
+
+      impacts += 1;
+      bestStreakMs = Math.max(bestStreakMs, currentStreakMs);
+      currentStreakMs = 0;
+      phase = PHASE.IMPACT;
+      impactPauseRemainingMs = GAME_CONFIG.IMPACT_PAUSE_MS;
+      protectionRemainingMs = GAME_CONFIG.PROTECTION_MS;
+      setStatus("Impacto");
+      updateHud();
+      showImpactMessage();
+
+      playShell.classList.remove("is-impact");
+      void playShell.offsetWidth;
+      playShell.classList.add("is-impact");
+    }
+
+    function resumeAfterImpact() {
+      phase = PHASE.RUNNING;
+      playShell.classList.remove("is-impact");
+      setStatus("Protegido");
+      hideOverlay();
+    }
+
+    function segmentDistanceSquared(px, py, ax, ay, bx, by) {
+      const abX = bx - ax;
+      const abY = by - ay;
+      const lengthSquared = abX * abX + abY * abY;
+
+      if (lengthSquared === 0) {
+        const dx = px - ax;
+        const dy = py - ay;
+        return dx * dx + dy * dy;
+      }
+
+      const projection = clamp(((px - ax) * abX + (py - ay) * abY) / lengthSquared, 0, 1);
+      const closestX = ax + projection * abX;
+      const closestY = ay + projection * abY;
+      const dx = px - closestX;
+      const dy = py - closestY;
+      return dx * dx + dy * dy;
+    }
+
+    function checkPlayerPathCollision() {
+      if (phase !== PHASE.RUNNING || protectionRemainingMs > 0) {
+        return;
+      }
+
+      for (const obstacle of obstacles) {
+        const combinedRadius = player.radius + obstacle.radius;
+        const distanceSquared = segmentDistanceSquared(
+          obstacle.x,
+          obstacle.y,
+          player.previousX,
+          player.previousY,
+          player.x,
+          player.y
+        );
+
+        if (distanceSquared <= combinedRadius * combinedRadius) {
+          registerImpact();
+          return;
+        }
+      }
+    }
+
+    function movePlayerFromPointer(event) {
+      const rectangle = playShell.getBoundingClientRect();
+      player.previousX = player.x;
+      player.previousY = player.y;
+      player.x = clamp(event.clientX - rectangle.left, player.radius, arenaWidth - player.radius);
+      player.y = clamp(event.clientY - rectangle.top, player.radius, arenaHeight - player.radius);
+
+      if (phase === PHASE.READY) {
+        player.previousX = player.x;
+        player.previousY = player.y;
+        startGame();
+        return;
+      }
+
+      checkPlayerPathCollision();
+    }
+
+    function updateObstacle(obstacle, deltaSeconds) {
+      obstacle.x += obstacle.velocityX * deltaSeconds;
+      obstacle.y += obstacle.velocityY * deltaSeconds;
+
+      const minX = obstacle.radius;
+      const maxX = Math.max(minX, arenaWidth - obstacle.radius);
+      const minY = obstacle.radius;
+      const maxY = Math.max(minY, arenaHeight - obstacle.radius);
+
+      if (obstacle.x <= minX || obstacle.x >= maxX) {
+        obstacle.x = clamp(obstacle.x, minX, maxX);
+        obstacle.velocityX *= -1;
+      }
+
+      if (obstacle.y <= minY || obstacle.y >= maxY) {
+        obstacle.y = clamp(obstacle.y, minY, maxY);
+        obstacle.velocityY *= -1;
+      }
+    }
+
+    function addScheduledObstacles() {
+      const elapsedSeconds = GAME_CONFIG.ROUND_DURATION_SECONDS - remainingMs / 1000;
+      while (
+        obstacles.length < GAME_CONFIG.OBSTACLE_APPEAR_AT.length &&
+        elapsedSeconds >= GAME_CONFIG.OBSTACLE_APPEAR_AT[obstacles.length]
+      ) {
+        addObstacle();
+      }
+    }
+
+    function checkCurrentCollision() {
+      if (phase !== PHASE.RUNNING || protectionRemainingMs > 0) {
+        return;
+      }
+
+      for (const obstacle of obstacles) {
+        const dx = player.x - obstacle.x;
+        const dy = player.y - obstacle.y;
+        const combinedRadius = player.radius + obstacle.radius;
+        if (dx * dx + dy * dy <= combinedRadius * combinedRadius) {
+          registerImpact();
+          return;
+        }
+      }
+    }
+
+    function updateGame(deltaMs) {
+      protectionRemainingMs = Math.max(0, protectionRemainingMs - deltaMs);
+
+      if (!pointerInside || phase === PHASE.READY || phase === PHASE.FINISHED) {
+        return;
+      }
+
+      if (phase === PHASE.IMPACT) {
+        impactPauseRemainingMs -= deltaMs;
+        if (impactPauseRemainingMs <= 0) {
+          resumeAfterImpact();
+        }
+        return;
+      }
+
+      if (phase !== PHASE.RUNNING) {
+        return;
+      }
+
+      remainingMs = Math.max(0, remainingMs - deltaMs);
+      currentStreakMs += deltaMs;
+      bestStreakMs = Math.max(bestStreakMs, currentStreakMs);
+
+      const deltaSeconds = Math.min(deltaMs / 1000, GAME_CONFIG.MAX_FRAME_SECONDS);
+      for (const obstacle of obstacles) {
+        updateObstacle(obstacle, deltaSeconds);
+      }
+
+      addScheduledObstacles();
+      checkCurrentCollision();
+
+      if (protectionRemainingMs > 0 && phase === PHASE.RUNNING) {
+        setStatus("Protegido");
+      } else if (phase === PHASE.RUNNING) {
+        setStatus("Jugando");
+      }
+
+      if (remainingMs <= 0) {
+        finishGame();
+      }
+
+      updateHud();
+    }
+
+    function drawCircle(x, y, radius, fill, glow, lineWidth = 3) {
+      context.save();
+      context.shadowColor = glow;
+      context.shadowBlur = 20;
+      const gradient = context.createRadialGradient(
+        x - radius * 0.35,
+        y - radius * 0.4,
+        radius * 0.12,
+        x,
+        y,
+        radius
+      );
+      gradient.addColorStop(0, "#ffffff");
+      gradient.addColorStop(0.16, fill);
+      gradient.addColorStop(1, fill);
+      context.fillStyle = gradient;
+      context.beginPath();
+      context.arc(x, y, radius, 0, Math.PI * 2);
+      context.fill();
+      context.lineWidth = lineWidth;
+      context.strokeStyle = "rgba(255, 255, 255, 0.9)";
+      context.stroke();
+      context.restore();
+    }
+
+    function drawPlayer() {
+      const pulse = 1 + Math.sin(performance.now() * 0.005) * 0.035;
+      const alpha = protectionRemainingMs > 0 && Math.floor(protectionRemainingMs / 120) % 2 === 0 ? 0.42 : 1;
+
+      context.save();
+      context.globalAlpha = alpha;
+      drawCircle(
+        player.x,
+        player.y,
+        player.radius * pulse,
+        GAME_CONFIG.PLAYER_COLOR,
+        "rgba(56, 232, 255, 0.9)",
+        4
+      );
+
+      context.translate(player.x, player.y);
+      context.fillStyle = "#ffffff";
+      context.beginPath();
+      for (let point = 0; point < 8; point += 1) {
+        const angle = -Math.PI / 2 + point * Math.PI / 4;
+        const radius = point % 2 === 0 ? player.radius * 0.42 : player.radius * 0.18;
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius;
+        if (point === 0) context.moveTo(x, y);
+        else context.lineTo(x, y);
+      }
+      context.closePath();
+      context.fill();
+      context.restore();
+    }
+
+    function drawObstacle(obstacle) {
+      drawCircle(
+        obstacle.x,
+        obstacle.y,
+        obstacle.radius,
+        obstacle.color,
+        `${obstacle.color}aa`,
+        3
+      );
+
+      context.save();
+      context.translate(obstacle.x, obstacle.y);
+      context.rotate(Math.PI / 4);
+      context.fillStyle = "rgba(8, 20, 38, 0.7)";
+      context.fillRect(-obstacle.radius * 0.1, -obstacle.radius * 0.48, obstacle.radius * 0.2, obstacle.radius * 0.96);
+      context.fillRect(-obstacle.radius * 0.48, -obstacle.radius * 0.1, obstacle.radius * 0.96, obstacle.radius * 0.2);
+      context.restore();
+    }
+
+    function drawScene() {
+      context.clearRect(0, 0, arenaWidth, arenaHeight);
+      for (const obstacle of obstacles) {
+        drawObstacle(obstacle);
+      }
+      drawPlayer();
+    }
+
+    function animationFrame(timestamp) {
+      if (lastFrameTimestamp === 0) {
+        lastFrameTimestamp = timestamp;
+      }
+      const deltaMs = Math.min(timestamp - lastFrameTimestamp, 100);
+      lastFrameTimestamp = timestamp;
+      updateGame(deltaMs);
+      drawScene();
+      window.requestAnimationFrame(animationFrame);
+    }
+
+    playShell.addEventListener("pointerenter", () => {
+      pointerInside = true;
+      if (phase === PHASE.RUNNING) {
+        hideOverlay();
+        setStatus(protectionRemainingMs > 0 ? "Protegido" : "Jugando");
+      } else if (phase === PHASE.IMPACT) {
+        showImpactMessage();
+      }
+    });
+
+    playShell.addEventListener("pointerleave", () => {
+      pointerInside = false;
+      if (phase === PHASE.RUNNING || phase === PHASE.IMPACT) {
+        setStatus("En pausa");
+        showOutsideMessage();
+      }
+    });
+
+    playShell.addEventListener("pointermove", (event) => {
+      if (phase !== PHASE.FINISHED) {
+        pointerInside = true;
+        movePlayerFromPointer(event);
+      }
+    });
+
+    window.addEventListener("blur", () => {
+      pointerInside = false;
+      if (phase === PHASE.RUNNING || phase === PHASE.IMPACT) {
+        setStatus("En pausa");
+        showOutsideMessage();
+      }
+    });
+
+    new ResizeObserver(resizeCanvas).observe(playShell);
+    resizeCanvas();
+    resetGame();
+    window.requestAnimationFrame(animationFrame);
+  </script>
+</body>
+</html>

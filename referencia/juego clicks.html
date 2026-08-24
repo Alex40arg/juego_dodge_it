@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Práctica de Mouse</title>
+  <style>
+    :root {
+      --bg: #111;
+      --panel: #1d1d1d;
+      --text: #f3f3f3;
+      --muted: #c9c9c9;
+      --left: #ff3434;
+      --right: #1ec8ff;
+      --double: #46e57a;
+      --ok: #5dff8f;
+      --warn: #ffd86b;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    #game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at center, #1f1f1f 0%, #0f0f0f 75%);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      justify-items: center;
+      padding: 24px;
+      gap: 14px;
+    }
+
+    .hud {
+      width: min(980px, 100%);
+      display: grid;
+      gap: 12px;
+      justify-items: center;
+      text-align: center;
+      z-index: 10;
+    }
+
+    .time {
+      font-size: clamp(2rem, 4.2vw, 4rem);
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--warn);
+      text-shadow: 0 0 10px rgba(255, 216, 107, 0.35);
+    }
+
+    .instruction {
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      font-weight: 800;
+      text-transform: uppercase;
+      line-height: 1.15;
+      letter-spacing: 1px;
+    }
+
+    .score {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+      font-size: clamp(1.1rem, 2vw, 1.6rem);
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .feedback {
+      min-height: 2.2em;
+      font-size: clamp(1.5rem, 3vw, 2.5rem);
+      font-weight: 800;
+      color: #fff;
+      text-align: center;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.35);
+      transition: opacity 0.15s ease;
+      opacity: 0;
+    }
+
+    .feedback.show {
+      opacity: 1;
+    }
+
+    #playfield {
+      position: relative;
+      width: 100%;
+      max-width: 1600px;
+      height: 100%;
+      min-height: 260px;
+      overflow: hidden;
+      cursor: crosshair;
+      border: 2px solid #3d3d3d;
+      border-radius: 18px;
+      background: rgba(0, 0, 0, 0.15);
+    }
+
+    #target {
+      --target-base-size: clamp(60px, 8vw, 110px);
+      --target-scale: 1;
+      --target-size: calc(var(--target-base-size) * var(--target-scale));
+      position: absolute;
+      width: var(--target-size);
+      height: var(--target-size);
+      border-radius: 50%;
+      border: 5px solid #fff;
+      box-shadow: 0 0 24px rgba(255, 255, 255, 0.7);
+      transform: translate(-50%, -50%);
+      display: none;
+    }
+
+    #target.left {
+      background: var(--left);
+      box-shadow: 0 0 26px rgba(255, 52, 52, 0.95);
+    }
+
+    #target.right {
+      background: var(--right);
+      box-shadow: 0 0 26px rgba(30, 200, 255, 0.95);
+    }
+
+    #target.double {
+      background: var(--double);
+      box-shadow: 0 0 26px rgba(70, 229, 122, 0.95);
+    }
+
+    #overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 10, 10, 0.94);
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      z-index: 20;
+    }
+
+    .card {
+      width: min(760px, 100%);
+      background: var(--panel);
+      border: 2px solid #3d3d3d;
+      border-radius: 18px;
+      padding: 26px;
+      text-align: center;
+      box-shadow: 0 0 22px rgba(0, 0, 0, 0.55);
+    }
+
+    .card h1 {
+      margin: 0 0 10px;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+    }
+
+    .card p {
+      margin: 8px 0;
+      font-size: clamp(1.15rem, 2.3vw, 1.8rem);
+      line-height: 1.4;
+      color: var(--muted);
+    }
+
+    .result-list {
+      margin: 18px auto;
+      width: fit-content;
+      text-align: left;
+      font-size: clamp(1.2rem, 2.2vw, 1.8rem);
+      line-height: 1.6;
+    }
+
+    button {
+      margin-top: 14px;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 26px;
+      font-size: clamp(1.2rem, 2vw, 1.7rem);
+      font-weight: 800;
+      background: var(--ok);
+      color: #0d0d0d;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+    }
+
+    button:hover {
+      filter: brightness(1.06);
+    }
+
+    .settingsGroup {
+      margin-top: 26px;
+    }
+
+    .card.settingsCard {
+      width: min(1180px, 100%);
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+
+    .settingsLayout {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 18px;
+      text-align: left;
+    }
+
+    .settingsLayout .settingsGroup {
+      margin-top: 0;
+    }
+
+    .settingsActions {
+      grid-column: 1 / -1;
+    }
+
+    .settingsGroup p {
+      margin-bottom: 10px;
+    }
+
+    .choiceRow {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .choiceRow button.is-selected {
+      outline: 4px solid #fff;
+    }
+
+    .choiceRow button:disabled {
+      cursor: not-allowed;
+      filter: grayscale(0.8) brightness(0.65);
+      opacity: 0.55;
+    }
+
+    .settingsNote {
+      color: var(--warn);
+      font-weight: 700;
+    }
+
+    .optionGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+    }
+
+    .optionCard {
+      width: 100%;
+      min-height: 64px;
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      border: 2px solid #4a4a4a;
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #252525;
+      color: var(--text);
+      text-align: left;
+      box-shadow: none;
+    }
+
+    .optionCard.is-selected {
+      border-color: #fff;
+      outline: 4px solid rgba(255, 255, 255, 0.35);
+      background: #303030;
+    }
+
+    .optionCard.is-disabled,
+    .optionCard:disabled {
+      cursor: not-allowed;
+      filter: grayscale(0.8) brightness(0.7);
+      opacity: 0.55;
+    }
+
+    .optionDot {
+      width: 22px;
+      height: 22px;
+      flex: 0 0 22px;
+      border: 3px solid var(--muted);
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 4px #252525;
+    }
+
+    .optionCard.is-selected .optionDot {
+      border-color: #fff;
+      background: var(--ok);
+    }
+
+    @media (max-width: 800px) {
+      .settingsLayout {
+        grid-template-columns: 1fr;
+      }
+
+      .settingsActions {
+        grid-column: auto;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <main id="game">
+    <!-- Panel de información visible durante la partida -->
+    <section class="hud" aria-live="polite">
+      <div id="time" class="time">Tiempo: 60</div>
+      <div id="instruction" class="instruction">Hacé CLICK IZQUIERDO</div>
+      <div class="score">
+        <span id="hits">Aciertos: 0</span>
+        <span id="errors">Errores: 0</span>
+        <span id="levelInfo">Nivel: 1</span>
+      </div>
+      <div id="feedback" class="feedback"></div>
+    </section>
+
+    <!-- Zona de juego real (separada del HUD) -->
+    <section id="playfield" aria-label="Campo de juego">
+      <div id="target" role="button" aria-label="Objetivo"></div>
+    </section>
+
+    <!-- Pantalla inicial y final -->
+    <section id="overlay">
+      <div class="card" id="overlayCard"></div>
+    </section>
+  </main>
+
+  <script>
+    // Referencias a elementos del DOM
+    const playfield = document.getElementById('playfield');
+    const target = document.getElementById('target');
+    const instructionEl = document.getElementById('instruction');
+    const timeEl = document.getElementById('time');
+    const hitsEl = document.getElementById('hits');
+    const errorsEl = document.getElementById('errors');
+    const feedbackEl = document.getElementById('feedback');
+    const overlay = document.getElementById('overlay');
+    const overlayCard = document.getElementById('overlayCard');
+
+    // Estado principal del juego
+    let selectedLevel = 1;
+    let selectedDurationSeconds = 300;
+    let selectedGameMode = 'classic'; // classic | moving
+    let selectedMoveSpeed = 'slow'; // slow | medium | fast
+    let selectedTargetSize = 'normal'; // small | normal | large
+    let requiredAction = 'left'; // left | right | double
+    let hits = 0;
+    let errors = 0;
+    let clickTotal = 0;
+    let reactionTimes = [];
+    let spawnTimestamp = 0;
+    let timeLeft = selectedDurationSeconds;
+    let timerId = null;
+    let running = false;
+    let targetX = 0;
+    let targetY = 0;
+    let velocityX = 0;
+    let velocityY = 0;
+    let animationId = null;
+    let lastFrameTime = 0;
+
+    const moveSpeeds = {
+      slow: 90,
+      medium: 150,
+      fast: 220,
+    };
+
+    const moveSpeedLabels = {
+      slow: 'Lenta',
+      medium: 'Media',
+      fast: 'R\u00e1pida',
+    };
+
+    const targetSizeScales = {
+      small: 0.5,
+      normal: 1,
+      large: 1.8,
+    };
+
+    const targetSizeLabels = {
+      small: 'Chico',
+      normal: 'Normal',
+      large: 'Grande',
+    };
+
+    // Convierte el tipo de click en texto
+    function labelForAction(action) {
+      if (action === 'left') return 'IZQUIERDO';
+      if (action === 'right') return 'DERECHO';
+      return 'DOBLE CLICK';
+    }
+
+    function labelForDuration(seconds) {
+      return seconds === 60 ? '1 minuto' : `${seconds / 60} minutos`;
+    }
+
+    function labelForGameMode(mode) {
+      return mode === 'moving' ? 'Movimiento' : 'Cl\u00e1sica';
+    }
+
+    // Muestra mensajes de feedback
+    function showFeedback(message, keep = 1200) {
+      feedbackEl.textContent = message;
+      feedbackEl.classList.add('show');
+      window.clearTimeout(showFeedback._id);
+      showFeedback._id = window.setTimeout(() => {
+        feedbackEl.classList.remove('show');
+      }, keep);
+    }
+
+    // Actualiza textos de HUD
+    function updateHud() {
+      hitsEl.textContent = `Aciertos: ${hits}`;
+      errorsEl.textContent = `Errores: ${errors}`;
+      instructionEl.textContent = requiredAction === 'double'
+        ? 'Hacé DOBLE CLICK'
+        : `Hacé CLICK ${labelForAction(requiredAction)}`;
+      instructionEl.style.color = requiredAction === 'left'
+        ? 'var(--left)'
+        : requiredAction === 'right'
+          ? 'var(--right)'
+          : 'var(--double)';
+      document.getElementById('levelInfo').textContent = selectedGameMode === 'moving'
+        ? `Modo: Movimiento | Velocidad: ${moveSpeedLabels[selectedMoveSpeed]}`
+        : `Nivel: ${selectedLevel}`;
+      timeEl.textContent = `Tiempo: ${timeLeft}`;
+    }
+
+    // Genera posición aleatoria del target sin salir de la pantalla
+    function randomPosition() {
+      const rect = playfield.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+      const targetRect = target.getBoundingClientRect();
+      const size = targetRect.width || 104;
+      const radius = size / 2;
+      const maxX = Math.max(width - size, 0);
+      const maxY = Math.max(height - size, 0);
+      const x = Math.random() * maxX + radius;
+      const y = Math.random() * maxY + radius;
+      return { x, y };
+    }
+
+    function setTargetPosition(x, y) {
+      targetX = x;
+      targetY = y;
+      target.style.left = `${targetX}px`;
+      target.style.top = `${targetY}px`;
+    }
+
+    function cancelTargetAnimation() {
+      if (animationId !== null) {
+        window.cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+      lastFrameTime = 0;
+    }
+
+    function assignRandomMovingVelocity() {
+      const speed = moveSpeeds[selectedMoveSpeed];
+      const angle = Math.random() * Math.PI * 2;
+      velocityX = Math.cos(angle) * speed;
+      velocityY = Math.sin(angle) * speed;
+    }
+
+    function animateMovingTarget(now) {
+      if (!running || selectedGameMode !== 'moving' || target.style.display === 'none') {
+        animationId = null;
+        return;
+      }
+
+      const deltaSeconds = lastFrameTime > 0
+        ? Math.min((now - lastFrameTime) / 1000, 0.05)
+        : 0;
+      lastFrameTime = now;
+
+      const rect = playfield.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const radius = (targetRect.width || 104) / 2;
+      const minX = radius;
+      const minY = radius;
+      const maxX = Math.max(radius, rect.width - radius);
+      const maxY = Math.max(radius, rect.height - radius);
+
+      let nextX = targetX + velocityX * deltaSeconds;
+      let nextY = targetY + velocityY * deltaSeconds;
+
+      if (nextX <= minX) {
+        nextX = minX;
+        velocityX = Math.abs(velocityX);
+      } else if (nextX >= maxX) {
+        nextX = maxX;
+        velocityX = -Math.abs(velocityX);
+      }
+
+      if (nextY <= minY) {
+        nextY = minY;
+        velocityY = Math.abs(velocityY);
+      } else if (nextY >= maxY) {
+        nextY = maxY;
+        velocityY = -Math.abs(velocityY);
+      }
+
+      setTargetPosition(nextX, nextY);
+      animationId = window.requestAnimationFrame(animateMovingTarget);
+    }
+
+    function startTargetAnimation() {
+      cancelTargetAnimation();
+      lastFrameTime = performance.now();
+      animationId = window.requestAnimationFrame(animateMovingTarget);
+    }
+
+    // Crea un nuevo objetivo (tipo + posición)
+    function pickActionByLevel() {
+      if (selectedLevel === 1) return 'left';
+      if (selectedLevel === 2) return Math.random() < 0.5 ? 'left' : 'right';
+      const roll = Math.random();
+      if (roll < 0.34) return 'left';
+      if (roll < 0.67) return 'right';
+      return 'double';
+    }
+
+    function spawnTarget() {
+      cancelTargetAnimation();
+      requiredAction = selectedGameMode === 'moving' ? 'left' : pickActionByLevel();
+      target.style.display = 'block';
+      const pos = randomPosition();
+      target.classList.remove('left', 'right', 'double');
+      target.classList.add(requiredAction);
+      setTargetPosition(pos.x, pos.y);
+      if (selectedGameMode === 'moving') {
+        assignRandomMovingVelocity();
+        startTargetAnimation();
+      }
+      spawnTimestamp = performance.now();
+      updateHud();
+    }
+
+    // Finaliza partida y muestra resultados
+    function endGame() {
+      running = false;
+      window.clearInterval(timerId);
+      timerId = null;
+      cancelTargetAnimation();
+      target.style.display = 'none';
+
+      const accuracy = clickTotal > 0 ? (hits / clickTotal) * 100 : 0;
+      const avgReaction = reactionTimes.length > 0
+        ? reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length
+        : 0;
+
+      overlayCard.classList.remove('settingsCard');
+      overlayCard.innerHTML = `
+        <h1>¡Tiempo terminado!</h1>
+        <div class="result-list">
+          <div>Aciertos: <strong>${hits}</strong></div>
+          <div>Errores: <strong>${errors}</strong></div>
+          <div>Clicks totales: <strong>${clickTotal}</strong></div>
+          <div>Precisión: <strong>${accuracy.toFixed(1)}%</strong></div>
+          <div>Reacción promedio: <strong>${Math.round(avgReaction)} ms</strong></div>
+          <div>Duración: <strong>${labelForDuration(selectedDurationSeconds)}</strong></div>
+          <div>Tipo de partida: <strong>${labelForGameMode(selectedGameMode)}</strong></div>
+          <div>Tama&ntilde;o: <strong>${targetSizeLabels[selectedTargetSize]}</strong></div>
+          ${selectedGameMode === 'moving' ? `<div>Velocidad: <strong>${moveSpeedLabels[selectedMoveSpeed]}</strong></div>` : ''}
+        </div>
+        <div class="choiceRow">
+          <button id="restartBtn" type="button">Jugar de nuevo</button>
+          <button id="endMenuBtn" type="button">Volver al men&uacute;</button>
+        </div>
+      `;
+      overlay.style.display = 'grid';
+      document.getElementById('restartBtn').addEventListener('click', startGame);
+      document.getElementById('endMenuBtn').addEventListener('click', renderMainMenu);
+    }
+
+    // Inicia o reinicia valores para jugar
+    function startGame() {
+      hits = 0;
+      errors = 0;
+      clickTotal = 0;
+      reactionTimes = [];
+      timeLeft = selectedDurationSeconds;
+      running = true;
+      cancelTargetAnimation();
+      feedbackEl.classList.remove('show');
+      overlay.style.display = 'none';
+
+      spawnTarget();
+      updateHud();
+
+      window.clearInterval(timerId);
+      timerId = window.setInterval(() => {
+        timeLeft -= 1;
+        updateHud();
+        if (timeLeft <= 0) {
+          endGame();
+        }
+      }, 1000);
+    }
+
+    // Durante la partida, anulamos menú contextual para que el click derecho siempre cuente
+    document.addEventListener('contextmenu', (event) => {
+      if (running) {
+        event.preventDefault();
+      }
+    });
+
+    // Control principal de clicks dentro del playfield
+    playfield.addEventListener('mousedown', (event) => {
+      if (!running || target.style.display === 'none') return;
+
+      // Sólo evaluamos clicks sobre el target
+      if (event.target !== target) return;
+
+      clickTotal += 1;
+
+      if (selectedGameMode === 'moving' && event.button !== 0) {
+        errors += 1;
+        showFeedback('En Movimiento es solo click izquierdo.', 1100);
+        updateHud();
+        return;
+      }
+
+      if (requiredAction === 'double') {
+        showFeedback('Este target es DOBLE CLICK.', 900);
+        return;
+      }
+
+      const expectedButton = requiredAction === 'left' ? 0 : 2;
+      if (event.button === expectedButton) {
+        hits += 1;
+        const reactionMs = performance.now() - spawnTimestamp;
+        reactionTimes.push(reactionMs);
+        showFeedback('¡Bien!', 500);
+        spawnTarget();
+      } else {
+        errors += 1;
+        showFeedback(`Ese era click ${labelForAction(requiredAction)}. Probá de nuevo.`, 1300);
+        updateHud();
+      }
+    });
+
+    playfield.addEventListener('dblclick', (event) => {
+      if (!running || target.style.display === 'none') return;
+      if (event.target !== target) return;
+
+      clickTotal += 1;
+      if (selectedGameMode === 'moving') {
+        errors += 1;
+        showFeedback('En Movimiento es solo click izquierdo.', 1100);
+        updateHud();
+        return;
+      }
+
+      if (requiredAction === 'double') {
+        hits += 1;
+        const reactionMs = performance.now() - spawnTimestamp;
+        reactionTimes.push(reactionMs);
+        showFeedback('¡Bien!', 500);
+        spawnTarget();
+      } else {
+        errors += 1;
+        showFeedback(`No era ${labelForAction('double')}.`, 900);
+        updateHud();
+      }
+    });
+
+    function updateSelectionOutlines() {
+      document.querySelectorAll('.gameModeBtn').forEach((btn) => {
+        btn.classList.toggle('is-selected', btn.dataset.mode === selectedGameMode);
+        btn.setAttribute('aria-pressed', btn.dataset.mode === selectedGameMode);
+      });
+      document.querySelectorAll('.levelBtn').forEach((btn) => {
+        const isLocked = selectedGameMode === 'moving' && btn.dataset.level !== '1';
+        btn.disabled = isLocked;
+        btn.classList.toggle('is-disabled', isLocked);
+        btn.classList.toggle('is-selected', Number(btn.dataset.level) === selectedLevel);
+        btn.setAttribute('aria-pressed', Number(btn.dataset.level) === selectedLevel);
+      });
+      document.querySelectorAll('.durationBtn').forEach((btn) => {
+        btn.classList.toggle('is-selected', Number(btn.dataset.duration) === selectedDurationSeconds);
+        btn.setAttribute('aria-pressed', Number(btn.dataset.duration) === selectedDurationSeconds);
+      });
+      document.querySelectorAll('.speedBtn').forEach((btn) => {
+        const isLocked = selectedGameMode === 'classic';
+        btn.disabled = isLocked;
+        btn.classList.toggle('is-disabled', isLocked);
+        btn.classList.toggle('is-selected', btn.dataset.speed === selectedMoveSpeed);
+        btn.setAttribute('aria-pressed', btn.dataset.speed === selectedMoveSpeed);
+      });
+      document.querySelectorAll('.targetSizeBtn').forEach((btn) => {
+        btn.classList.toggle('is-selected', btn.dataset.targetSize === selectedTargetSize);
+        btn.setAttribute('aria-pressed', btn.dataset.targetSize === selectedTargetSize);
+      });
+      const movingModeNote = document.getElementById('movingModeNote');
+      if (movingModeNote) {
+        movingModeNote.style.display = selectedGameMode === 'moving' ? 'block' : 'none';
+      }
+      const speedModeNote = document.getElementById('speedModeNote');
+      if (speedModeNote) {
+        speedModeNote.style.display = selectedGameMode === 'classic' ? 'block' : 'none';
+      }
+    }
+
+    function applyGameMode(mode) {
+      selectedGameMode = mode;
+      if (selectedGameMode === 'moving') {
+        selectedLevel = 1;
+      }
+      updateSelectionOutlines();
+    }
+
+    function renderMainMenu() {
+      overlayCard.classList.remove('settingsCard');
+      overlayCard.innerHTML = `
+        <h1>Pr&aacute;ctica de Mouse v3</h1>
+        <div class="choiceRow">
+          <button id="playBtn" type="button">Jugar</button>
+          <button id="settingsBtn" type="button">Configuraci&oacute;n</button>
+        </div>
+      `;
+      overlay.style.display = 'grid';
+      document.getElementById('playBtn').addEventListener('click', startGame);
+      document.getElementById('settingsBtn').addEventListener('click', renderSettingsMenu);
+    }
+
+    function renderSettingsMenu() {
+      overlayCard.classList.add('settingsCard');
+      overlayCard.innerHTML = `
+        <h1>Configuraci&oacute;n</h1>
+        <div class="settingsLayout">
+        <div class="settingsGroup">
+          <p><strong>Tipo de partida</strong></p>
+          <div class="optionGrid">
+            <button class="optionCard gameModeBtn" data-mode="classic" type="button">
+              <span class="optionDot" aria-hidden="true"></span>
+              <span>Cl&aacute;sica</span>
+            </button>
+            <button class="optionCard gameModeBtn" data-mode="moving" type="button">
+              <span class="optionDot" aria-hidden="true"></span>
+              <span>Movimiento</span>
+            </button>
+          </div>
+        </div>
+        <div class="settingsGroup">
+          <p><strong>Nivel</strong></p>
+          <div class="optionGrid">
+            <button class="optionCard levelBtn" data-level="1" type="button">
+              <span class="optionDot" aria-hidden="true"></span>
+              <span>Nivel 1</span>
+            </button>
+            <button class="optionCard levelBtn" data-level="2" type="button">
+              <span class="optionDot" aria-hidden="true"></span>
+              <span>Nivel 2</span>
+            </button>
+            <button class="optionCard levelBtn" data-level="3" type="button">
+              <span class="optionDot" aria-hidden="true"></span>
+              <span>Nivel 3</span>
+            </button>
+          </div>
+          <p class="settingsNote" id="movingModeNote">En modo Movimiento se usa solo click izquierdo.</p>
+        </div>
+        <div class="settingsGroup">
+          <p><strong>Duraci&oacute;n</strong></p>
+          <div class="optionGrid">
+            <button class="optionCard durationBtn" data-duration="60" type="button">
+              <span class="optionDot" aria-hidden="true"></span>
+              <span>1 minuto</span>
+            </button>
+            <button class="optionCard durationBtn" data-duration="300" type="button">
+              <span class="optionDot" aria-hidden="true"></span>
+              <span>5 minutos</span>
+            </button>
+            <button class="optionCard durationBtn" data-duration="600" type="button">
+              <span class="optionDot" aria-hidden="true"></span>
+              <span>10 minutos</span>
+            </button>
+          </div>
+        </div>
+        <div class="settingsGroup">
+          <p><strong>Velocidad</strong></p>
+          <div class="optionGrid">
+            <button class="optionCard speedBtn" data-speed="slow" type="button">
+              <span class="optionDot" aria-hidden="true"></span>
+              <span>Lenta</span>
+            </button>
+            <button class="optionCard speedBtn" data-speed="medium" type="button">
+              <span class="optionDot" aria-hidden="true"></span>
+              <span>Media</span>
+            </button>
+            <button class="optionCard speedBtn" data-speed="fast" type="button">
+              <span class="optionDot" aria-hidden="true"></span>
+              <span>R&aacute;pida</span>
+            </button>
+          </div>
+          <p class="settingsNote" id="speedModeNote">La velocidad solo se usa en modo Movimiento.</p>
+        </div>
+        <div class="settingsGroup">
+          <p><strong>Tama&ntilde;o del target</strong></p>
+          <div class="optionGrid">
+            <button class="optionCard targetSizeBtn" data-target-size="small" type="button">
+              <span class="optionDot" aria-hidden="true"></span>
+              <span>Chico (dif&iacute;cil)</span>
+            </button>
+            <button class="optionCard targetSizeBtn" data-target-size="normal" type="button">
+              <span class="optionDot" aria-hidden="true"></span>
+              <span>Normal</span>
+            </button>
+            <button class="optionCard targetSizeBtn" data-target-size="large" type="button">
+              <span class="optionDot" aria-hidden="true"></span>
+              <span>Grande (f&aacute;cil)</span>
+            </button>
+          </div>
+        </div>
+        <div class="choiceRow settingsActions">
+          <button id="saveSettingsBtn" type="button">Guardar y volver</button>
+          <button id="backMenuBtn" type="button">Volver al men&uacute;</button>
+        </div>
+        </div>
+      `;
+
+      document.querySelectorAll('.gameModeBtn').forEach((btn) => {
+        btn.addEventListener('click', () => applyGameMode(btn.dataset.mode));
+      });
+      document.querySelectorAll('.levelBtn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (selectedGameMode === 'moving' && btn.dataset.level !== '1') return;
+          selectedLevel = Number(btn.dataset.level);
+          updateSelectionOutlines();
+        });
+      });
+      document.querySelectorAll('.durationBtn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          selectedDurationSeconds = Number(btn.dataset.duration);
+          updateSelectionOutlines();
+        });
+      });
+      document.querySelectorAll('.speedBtn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          selectedMoveSpeed = btn.dataset.speed;
+          updateSelectionOutlines();
+        });
+      });
+      document.querySelectorAll('.targetSizeBtn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          selectedTargetSize = btn.dataset.targetSize;
+          target.style.setProperty('--target-scale', targetSizeScales[selectedTargetSize]);
+          updateSelectionOutlines();
+        });
+      });
+      document.getElementById('saveSettingsBtn').addEventListener('click', renderMainMenu);
+      document.getElementById('backMenuBtn').addEventListener('click', renderMainMenu);
+      updateSelectionOutlines();
+    }
+
+    renderMainMenu();
+
+    // Cambio del fix: ahora el layout separa HUD y playfield (grid), y el target se posiciona
+    // usando el rect real del playfield para que no suba al HUD ni rompa clicks/contextmenu.
+  </script>
+</body>
+</html>
