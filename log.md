@@ -22,3 +22,24 @@ Ajuste inicial de escala y velocidad solicitado después de probar la primera ve
 - Se duplicó el diámetro visual de los obstáculos: `OBSTACLE_RADIUS` pasó de 29 a 58 píxeles.
 - Se aumentó moderadamente la velocidad de los obstáculos, de 112 a 120 píxeles por segundo.
 - No se modificó todavía ningún otro comportamiento del juego.
+
+## ver_03 — 24 de agosto de 2026
+
+Aviso visual previo a la activación de cada obstáculo.
+
+- Se conservaron los ajustes manuales del usuario: jugador de 50 px, obstáculos de 60 px y velocidad de 200 px/s.
+- Cada obstáculo nuevo aparece primero inmóvil y realiza tres parpadeos.
+- Durante el aviso previo, el obstáculo no se mueve, no cuenta en el HUD y no puede provocar impactos.
+- Después del tercer parpadeo, el obstáculo se activa, comienza a moverse y se suma al contador.
+- Se agregaron `SPAWN_FLASH_COUNT` y `SPAWN_FLASH_CYCLE_MS` a `GAME_CONFIG` para poder ajustar el aviso fácilmente.
+
+## ver_04 — 24 de agosto de 2026
+
+Confinamiento del puntero, pausa con Escape y protección frente a clics accidentales.
+
+- Un clic izquierdo inicial solicita Pointer Lock y comienza la partida.
+- Durante la captura, el jugador se mueve directamente con `movementX` y `movementY` y queda limitado a los bordes del campo.
+- Escape libera el puntero y pausa el juego; un nuevo clic izquierdo vuelve a capturarlo y continúa desde el mismo estado.
+- Se diferencian una solicitud de captura pendiente y una pérdida real de Pointer Lock para evitar pausas falsas.
+- El clic derecho y el menú contextual quedan deshabilitados únicamente dentro del área de juego.
+- La partida también se pausa si la ventana pierde el foco.

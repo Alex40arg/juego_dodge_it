@@ -199,10 +199,6 @@
       border-radius: 24px;
       background: #081526;
       box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
-      cursor: pointer;
-    }
-
-    .play-shell.is-pointer-locked {
       cursor: none;
     }
 
@@ -439,7 +435,7 @@
           <span class="legend-dot obstacle" aria-hidden="true"></span>
           <span>Evitá los círculos de colores</span>
         </div>
-        <p class="tuning-note">Un clic para entrar · Escape para pausar y liberar el mouse.</p>
+        <p class="tuning-note">Versión de prueba · Los tamaños y la velocidad pueden modificarse al comienzo del código.</p>
       </div>
     </aside>
 
@@ -448,8 +444,8 @@
       <div class="overlay" id="overlay" aria-live="assertive">
         <div class="message-card" id="messageCard">
           <div class="message-icon" aria-hidden="true">✦</div>
-          <h2 class="message-title">Entrá al campo</h2>
-          <p class="message-text">Hacé un clic izquierdo para comenzar. Después solo tenés que mover el mouse.</p>
+          <h2 class="message-title">Mové el mouse</h2>
+          <p class="message-text">Entrá en el campo y mové el círculo luminoso para comenzar. No hace falta hacer clic.</p>
         </div>
       </div>
     </section>
@@ -493,7 +489,6 @@
       READY: "ready",
       RUNNING: "running",
       IMPACT: "impact",
-      PAUSED: "paused",
       FINISHED: "finished"
     });
 
@@ -508,8 +503,7 @@
     let arenaWidth = 1;
     let arenaHeight = 1;
     let phase = PHASE.READY;
-    let phaseBeforePause = PHASE.RUNNING;
-    let pointerLockRequestPending = false;
+    let pointerInside = false;
     let obstacles = [];
     let nextObstacleIndex = 0;
     let impacts = 0;
@@ -554,8 +548,8 @@
       overlay.className = "overlay";
       messageCard.innerHTML = `
         <div class="message-icon" aria-hidden="true">✦</div>
-        <h2 class="message-title">Entrá al campo</h2>
-        <p class="message-text">Hacé un clic izquierdo para comenzar. Después solo tenés que mover el mouse.</p>
+        <h2 class="message-title">Mové el mouse</h2>
+        <p class="message-text">Entrá en el campo y mové el círculo luminoso para comenzar. No hace falta hacer clic.</p>
       `;
     }
 
@@ -564,21 +558,12 @@
       messageCard.innerHTML = '<div class="impact-message">¡IMPACTO!</div>';
     }
 
-    function showPausedMessage() {
+    function showOutsideMessage() {
       overlay.className = "overlay";
       messageCard.innerHTML = `
-        <div class="message-icon" aria-hidden="true">Ⅱ</div>
-        <h2 class="message-title">Juego pausado</h2>
-        <p class="message-text">El mouse está libre. Hacé clic izquierdo en el campo para continuar.</p>
-      `;
-    }
-
-    function showPointerLockError() {
-      overlay.className = "overlay";
-      messageCard.innerHTML = `
-        <div class="message-icon" aria-hidden="true">↻</div>
-        <h2 class="message-title">Intentá nuevamente</h2>
-        <p class="message-text">El navegador no pudo confinar el mouse. Hacé otro clic izquierdo dentro del campo.</p>
+        <div class="message-icon" aria-hidden="true">↩</div>
+        <h2 class="message-title">Volvé al campo</h2>
+        <p class="message-text">La partida está en pausa. Volvé a entrar con el mouse para continuar.</p>
       `;
     }
 
@@ -669,8 +654,6 @@
 
     function resetGame() {
       phase = PHASE.READY;
-      phaseBeforePause = PHASE.RUNNING;
-      pointerLockRequestPending = false;
       impacts = 0;
       remainingMs = GAME_CONFIG.ROUND_DURATION_SECONDS * 1000;
       impactPauseRemainingMs = 0;
@@ -702,9 +685,6 @@
       setStatus("Finalizado");
       updateHud();
       showFinishedMessage();
-      if (document.pointerLockElement === playShell) {
-        document.exitPointerLock();
-      }
     }
 
     function registerImpact() {
@@ -779,78 +759,21 @@
       }
     }
 
-    function movePlayerFromLockedPointer(event) {
-      if (document.pointerLockElement !== playShell || phase === PHASE.FINISHED || phase === PHASE.PAUSED) {
-        return;
-      }
-
+    function movePlayerFromPointer(event) {
+      const rectangle = playShell.getBoundingClientRect();
       player.previousX = player.x;
       player.previousY = player.y;
-      player.x = clamp(player.x + event.movementX, player.radius, arenaWidth - player.radius);
-      player.y = clamp(player.y + event.movementY, player.radius, arenaHeight - player.radius);
+      player.x = clamp(event.clientX - rectangle.left, player.radius, arenaWidth - player.radius);
+      player.y = clamp(event.clientY - rectangle.top, player.radius, arenaHeight - player.radius);
 
-      checkPlayerPathCollision();
-    }
-
-    async function requestGamePointerLock() {
-      if (phase === PHASE.FINISHED || document.pointerLockElement === playShell || pointerLockRequestPending) {
-        return;
-      }
-
-      pointerLockRequestPending = true;
-      try {
-        await playShell.requestPointerLock();
-      } catch (error) {
-        pointerLockRequestPending = false;
-        setStatus(phase === PHASE.READY ? "Listo" : "En pausa");
-        showPointerLockError();
-      }
-    }
-
-    function pauseForPointerRelease() {
-      if (phase !== PHASE.RUNNING && phase !== PHASE.IMPACT) {
-        return;
-      }
-
-      phaseBeforePause = phase;
-      phase = PHASE.PAUSED;
-      setStatus("En pausa");
-      showPausedMessage();
-    }
-
-    function resumeFromPointerLock() {
       if (phase === PHASE.READY) {
+        player.previousX = player.x;
+        player.previousY = player.y;
         startGame();
         return;
       }
 
-      if (phase !== PHASE.PAUSED) {
-        return;
-      }
-
-      phase = phaseBeforePause;
-      if (phase === PHASE.IMPACT) {
-        setStatus("Impacto");
-        showImpactMessage();
-      } else {
-        setStatus(protectionRemainingMs > 0 ? "Protegido" : "Jugando");
-        hideOverlay();
-      }
-    }
-
-    function handlePointerLockChange() {
-      if (document.pointerLockElement === playShell) {
-        pointerLockRequestPending = false;
-        playShell.classList.add("is-pointer-locked");
-        resumeFromPointerLock();
-        return;
-      }
-
-      playShell.classList.remove("is-pointer-locked");
-      if (pointerLockRequestPending) {
-        return;
-      }
-      pauseForPointerRelease();
+      checkPlayerPathCollision();
     }
 
     function updateObstacle(obstacle, deltaSeconds, deltaMs) {
@@ -916,12 +839,7 @@
     function updateGame(deltaMs) {
       protectionRemainingMs = Math.max(0, protectionRemainingMs - deltaMs);
 
-      if (
-        document.pointerLockElement !== playShell ||
-        phase === PHASE.READY ||
-        phase === PHASE.PAUSED ||
-        phase === PHASE.FINISHED
-      ) {
+      if (!pointerInside || phase === PHASE.READY || phase === PHASE.FINISHED) {
         return;
       }
 
@@ -1079,45 +997,36 @@
       window.requestAnimationFrame(animationFrame);
     }
 
-    playShell.addEventListener("pointerdown", (event) => {
-      if (event.button === 2) {
-        event.preventDefault();
-        event.stopPropagation();
+    playShell.addEventListener("pointerenter", () => {
+      pointerInside = true;
+      if (phase === PHASE.RUNNING) {
+        hideOverlay();
+        setStatus(protectionRemainingMs > 0 ? "Protegido" : "Jugando");
+      } else if (phase === PHASE.IMPACT) {
+        showImpactMessage();
       }
     });
 
-    playShell.addEventListener("click", (event) => {
-      if (event.button !== 0 || phase === PHASE.FINISHED) {
-        return;
-      }
-      event.preventDefault();
-      requestGamePointerLock();
-    });
-
-    playShell.addEventListener("contextmenu", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-    });
-
-    playShell.addEventListener("auxclick", (event) => {
-      if (event.button === 2) {
-        event.preventDefault();
-        event.stopPropagation();
+    playShell.addEventListener("pointerleave", () => {
+      pointerInside = false;
+      if (phase === PHASE.RUNNING || phase === PHASE.IMPACT) {
+        setStatus("En pausa");
+        showOutsideMessage();
       }
     });
 
-    document.addEventListener("mousemove", movePlayerFromLockedPointer);
-    document.addEventListener("pointerlockchange", handlePointerLockChange);
-    document.addEventListener("pointerlockerror", () => {
-      pointerLockRequestPending = false;
-      setStatus(phase === PHASE.READY ? "Listo" : "En pausa");
-      showPointerLockError();
+    playShell.addEventListener("pointermove", (event) => {
+      if (phase !== PHASE.FINISHED) {
+        pointerInside = true;
+        movePlayerFromPointer(event);
+      }
     });
 
     window.addEventListener("blur", () => {
-      pauseForPointerRelease();
-      if (document.pointerLockElement === playShell) {
-        document.exitPointerLock();
+      pointerInside = false;
+      if (phase === PHASE.RUNNING || phase === PHASE.IMPACT) {
+        setStatus("En pausa");
+        showOutsideMessage();
       }
     });
 
