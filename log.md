@@ -43,3 +43,13 @@ Confinamiento del puntero, pausa con Escape y protección frente a clics acciden
 - Se diferencian una solicitud de captura pendiente y una pérdida real de Pointer Lock para evitar pausas falsas.
 - El clic derecho y el menú contextual quedan deshabilitados únicamente dentro del área de juego.
 - La partida también se pausa si la ventana pierde el foco.
+
+## ver_05 — 24 de agosto de 2026
+
+Corrección de la recaptura intermitente después de pausar con Escape.
+
+- Cada solicitud de Pointer Lock recibe un identificador propio.
+- Los rechazos atrasados de una solicitud anterior ya no pueden reemplazar el estado de una captura posterior.
+- La notificación `pointerlockerror` y el rechazo de la promesa se procesan una sola vez.
+- Si Chrome rechaza un intento, el juego conserva el diálogo `Juego pausado` y permite realizar otro clic limpio.
+- Se eliminó el diálogo confuso `Intentá nuevamente`.
