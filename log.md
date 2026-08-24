@@ -53,3 +53,24 @@ Corrección de la recaptura intermitente después de pausar con Escape.
 - La notificación `pointerlockerror` y el rechazo de la promesa se procesan una sola vez.
 - Si Chrome rechaza un intento, el juego conserva el diálogo `Juego pausado` y permite realizar otro clic limpio.
 - Se eliminó el diálogo confuso `Intentá nuevamente`.
+
+## ver_06 — 24 de agosto de 2026
+
+Colisiones físicas entre obstáculos activos.
+
+- Los obstáculos activos ahora chocan y rebotan entre sí.
+- El rebote conserva el impulso mediante una resolución elástica basada en la masa proporcional al área de cada círculo.
+- Se corrige la penetración entre círculos para impedir que queden superpuestos o vibren pegados.
+- Se realizan dos pasadas breves de resolución por cuadro para estabilizar encuentros múltiples.
+- Después de una colisión, los obstáculos continúan respetando los límites del campo.
+- Los obstáculos que todavía están parpadeando no participan en colisiones hasta activarse.
+
+## ver_07 — 24 de agosto de 2026
+
+Velocidad constante y activación segura de obstáculos.
+
+- Después de cada choque, ambos obstáculos conservan la dirección resultante pero recuperan la velocidad configurada.
+- Se evita que un círculo quede detenido o que otro gane velocidad de manera permanente por una colisión oblicua.
+- Los obstáculos en advertencia continúan siendo intangibles y permanecen quietos durante los tres parpadeos.
+- Antes de activarse, un obstáculo superpuesto busca el espacio libre más cercano sin empujar ni desviar a los obstáculos activos.
+- La colisión física comienza solamente después de que el nuevo obstáculo está separado y activo.

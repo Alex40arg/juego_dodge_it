@@ -466,7 +466,7 @@
     const GAME_CONFIG = Object.freeze({
       PLAYER_RADIUS: 50,             // Tamaño del círculo que mueve el usuario.
       OBSTACLE_RADIUS: 60,           // Tamaño de cada obstáculo.
-      OBSTACLE_SPEED: 200,           // Velocidad fija de los obstáculos (píxeles/segundo).
+      OBSTACLE_SPEED: 200,           // Velocidad de los obstáculos (píxeles/segundo).
       ROUND_DURATION_SECONDS: 60,    // Duración de esta prueba.
       OBSTACLE_APPEAR_AT: [0, 15, 30, 45],
       SPAWN_FLASH_COUNT: 3,          // Cantidad de parpadeos antes de activarse.
@@ -869,81 +869,13 @@
       pauseForPointerRelease();
     }
 
-    function isActivationPositionFree(obstacle, x, y) {
-      const clearance = 2;
-
-      return obstacles.every((other) => {
-        if (other === obstacle || other.state !== "active") {
-          return true;
-        }
-
-        const deltaX = x - other.x;
-        const deltaY = y - other.y;
-        const minimumDistance = obstacle.radius + other.radius + clearance;
-        return deltaX * deltaX + deltaY * deltaY >= minimumDistance * minimumDistance;
-      });
-    }
-
-    function placeObstacleForActivation(obstacle, obstacleIndex) {
-      if (isActivationPositionFree(obstacle, obstacle.x, obstacle.y)) {
-        return;
-      }
-
-      const originX = obstacle.x;
-      const originY = obstacle.y;
-      const sampleCount = 32;
-      const distanceStep = Math.max(12, obstacle.radius * 0.35);
-      const maximumDistance = Math.hypot(arenaWidth, arenaHeight);
-      const startingAngle = (obstacleIndex * 2.399963229728653) % (Math.PI * 2);
-
-      for (let distance = distanceStep; distance <= maximumDistance; distance += distanceStep) {
-        for (let sample = 0; sample < sampleCount; sample += 1) {
-          const angle = startingAngle + (sample / sampleCount) * Math.PI * 2;
-          const candidateX = originX + Math.cos(angle) * distance;
-          const candidateY = originY + Math.sin(angle) * distance;
-
-          if (
-            candidateX < obstacle.radius ||
-            candidateX > arenaWidth - obstacle.radius ||
-            candidateY < obstacle.radius ||
-            candidateY > arenaHeight - obstacle.radius
-          ) {
-            continue;
-          }
-
-          if (isActivationPositionFree(obstacle, candidateX, candidateY)) {
-            obstacle.x = candidateX;
-            obstacle.y = candidateY;
-            return;
-          }
-        }
-      }
-    }
-
-    function enforceObstacleSpeed(obstacle, obstacleIndex) {
-      const currentSpeed = Math.hypot(obstacle.velocityX, obstacle.velocityY);
-
-      if (currentSpeed > 0.0001) {
-        const speedScale = GAME_CONFIG.OBSTACLE_SPEED / currentSpeed;
-        obstacle.velocityX *= speedScale;
-        obstacle.velocityY *= speedScale;
-        return;
-      }
-
-      const fallbackAngle = (obstacleIndex * 2.399963229728653) % (Math.PI * 2);
-      obstacle.velocityX = Math.cos(fallbackAngle) * GAME_CONFIG.OBSTACLE_SPEED;
-      obstacle.velocityY = Math.sin(fallbackAngle) * GAME_CONFIG.OBSTACLE_SPEED;
-    }
-
-    function updateObstacle(obstacle, deltaSeconds, deltaMs, obstacleIndex) {
+    function updateObstacle(obstacle, deltaSeconds, deltaMs) {
       if (obstacle.state === "warning") {
         obstacle.warningElapsedMs += deltaMs;
         const warningDuration = GAME_CONFIG.SPAWN_FLASH_COUNT * GAME_CONFIG.SPAWN_FLASH_CYCLE_MS;
         if (obstacle.warningElapsedMs >= warningDuration) {
-          placeObstacleForActivation(obstacle, obstacleIndex);
           obstacle.state = "active";
           obstacle.warningElapsedMs = warningDuration;
-          enforceObstacleSpeed(obstacle, obstacleIndex);
           updateHud();
         }
         return;
@@ -1021,9 +953,6 @@
         second.velocityX += impulse * firstMass * normalX;
         second.velocityY += impulse * firstMass * normalY;
       }
-
-      enforceObstacleSpeed(first, firstIndex);
-      enforceObstacleSpeed(second, secondIndex);
 
       keepObstacleInsideArena(first);
       keepObstacleInsideArena(second);
@@ -1109,8 +1038,8 @@
       bestStreakMs = Math.max(bestStreakMs, currentStreakMs);
 
       const deltaSeconds = Math.min(deltaMs / 1000, GAME_CONFIG.MAX_FRAME_SECONDS);
-      for (let obstacleIndex = 0; obstacleIndex < obstacles.length; obstacleIndex += 1) {
-        updateObstacle(obstacles[obstacleIndex], deltaSeconds, deltaMs, obstacleIndex);
+      for (const obstacle of obstacles) {
+        updateObstacle(obstacle, deltaSeconds, deltaMs);
       }
 
       resolveObstacleCollisions();
