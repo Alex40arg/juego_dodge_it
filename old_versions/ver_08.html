@@ -148,14 +148,14 @@
       box-shadow: 0 0 28px rgba(255, 85, 118, 0.48);
     }
 
-    .demo-orb.target {
+    .demo-orb.obstacle-two {
       right: 9%;
       bottom: 8%;
       width: clamp(72px, 7.4vw, 104px);
       aspect-ratio: 1;
       color: rgba(7, 20, 36, 0.72);
-      background: var(--green);
-      box-shadow: 0 0 28px rgba(87, 238, 154, 0.52);
+      background: var(--yellow);
+      box-shadow: 0 0 28px rgba(255, 215, 94, 0.46);
     }
 
     .menu-panel,
@@ -187,7 +187,7 @@
 
     .front-actions {
       display: grid;
-      gap: 8px;
+      gap: 14px;
     }
 
     #app {
@@ -240,10 +240,6 @@
 
     .status-card {
       padding: 16px;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 14px;
-      align-items: center;
       border: 1px solid rgba(95, 137, 177, 0.42);
       border-radius: 17px;
       background: rgba(4, 14, 27, 0.48);
@@ -266,32 +262,6 @@
       line-height: 1;
       font-variant-numeric: tabular-nums;
       text-shadow: 0 0 22px rgba(255, 215, 94, 0.24);
-    }
-
-    .guide-score {
-      min-width: 58px;
-      padding-left: 10px;
-      text-align: center;
-      border-left: 1px solid rgba(95, 137, 177, 0.34);
-    }
-
-    .guide-score strong {
-      display: block;
-      color: var(--green);
-      font-size: clamp(1.8rem, 2.5vw, 2.5rem);
-      line-height: 1;
-      font-variant-numeric: tabular-nums;
-      text-shadow: 0 0 18px rgba(87, 238, 154, 0.28);
-    }
-
-    .guide-score span {
-      display: block;
-      margin-top: 6px;
-      color: var(--muted);
-      font-size: 0.56rem;
-      font-weight: 800;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
     }
 
     .stats {
@@ -366,12 +336,6 @@
       box-shadow: 0 0 12px rgba(255, 85, 118, 0.48);
     }
 
-    .legend-dot.target {
-      border: 3px solid #fff;
-      background: var(--green);
-      box-shadow: 0 0 14px rgba(87, 238, 154, 0.62);
-    }
-
     .play-shell {
       position: relative;
       min-width: 0;
@@ -405,18 +369,9 @@
       animation: impactFlash 420ms ease-out;
     }
 
-    .play-shell.is-target-collected {
-      animation: targetFlash 360ms ease-out;
-    }
-
     @keyframes impactFlash {
       0%, 100% { box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34); }
       30% { box-shadow: inset 0 0 110px rgba(255, 54, 91, 0.56), 0 0 32px rgba(255, 54, 91, 0.68); }
-    }
-
-    @keyframes targetFlash {
-      0%, 100% { box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34); }
-      45% { box-shadow: inset 0 0 80px rgba(87, 238, 154, 0.2), 0 0 24px rgba(87, 238, 154, 0.42); }
     }
 
     canvas {
@@ -653,7 +608,7 @@
     .settings-grid {
       margin-top: 26px;
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 12px;
     }
 
@@ -786,12 +741,6 @@
       }
     }
 
-    @media (max-width: 1100px) {
-      .settings-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
     .tuning-note {
       margin: 0;
       color: #829ab2;
@@ -858,11 +807,11 @@
       <div class="menu-copy">
         <p class="brand-kicker">Práctica de movimiento del mouse</p>
         <h1 class="menu-title">Esquivá</h1>
-        <p class="menu-lead">Recorré toda la pantalla, alcanzá la luz verde y evitá los obstáculos de colores.</p>
+        <p class="menu-lead">Mové el círculo luminoso, recorré toda la pantalla y evitá los obstáculos de colores.</p>
         <div class="menu-demo" aria-hidden="true">
           <span class="demo-orb player">✦</span>
           <span class="demo-orb obstacle-one">×</span>
-          <span class="demo-orb target">•</span>
+          <span class="demo-orb obstacle-two">×</span>
         </div>
       </div>
 
@@ -915,10 +864,6 @@
             <input id="obstacleSizeInput" type="range" min="30" max="90" step="2" value="60" />
           </div>
           <div class="setting-control" data-custom-control>
-            <label for="targetSizeInput">Tamaño de la luz guía <output class="setting-output" id="targetSizeOutput">42 px</output></label>
-            <input id="targetSizeInput" type="range" min="20" max="60" step="2" value="42" />
-          </div>
-          <div class="setting-control" data-custom-control>
             <label for="speedInput">Velocidad <output class="setting-output" id="speedOutput">200 px/s</output></label>
             <input id="speedInput" type="range" min="100" max="400" step="10" value="200" />
           </div>
@@ -927,12 +872,8 @@
             <input id="spawnInput" type="range" min="3" max="30" step="1" value="15" />
           </div>
           <div class="setting-control" data-custom-control>
-            <label for="totalInput">Cantidad de obstáculos <output class="setting-output" id="totalOutput">4</output></label>
+            <label for="totalInput">Cantidad total <output class="setting-output" id="totalOutput">4</output></label>
             <input id="totalInput" type="range" min="1" max="12" step="1" value="4" />
-          </div>
-          <div class="setting-control" data-custom-control>
-            <label for="targetTimeInput">Tiempo para alcanzarla <output class="setting-output" id="targetTimeOutput">12 s</output></label>
-            <input id="targetTimeInput" type="range" min="5" max="20" step="1" value="12" />
           </div>
           <div class="setting-control" data-custom-control>
             <label for="durationInput">Duración</label>
@@ -960,18 +901,12 @@
       <header>
         <p class="brand-kicker">Práctica de mouse</p>
         <h1>Esquivá</h1>
-        <p class="subtitle">Alcanzá la luz verde y evitá los obstáculos.</p>
+        <p class="subtitle">Mové el círculo luminoso y evitá los obstáculos.</p>
       </header>
 
       <section class="status-card" aria-live="polite">
-        <div>
-          <span class="status-label">Tiempo restante</span>
-          <strong class="time-value" id="timeValue">1:00</strong>
-        </div>
-        <div class="guide-score">
-          <strong id="targetValue">0</strong>
-          <span>Metas</span>
-        </div>
+        <span class="status-label">Tiempo restante</span>
+        <strong class="time-value" id="timeValue">1:00</strong>
       </section>
 
       <section class="stats">
@@ -1002,10 +937,6 @@
           <span class="legend-dot obstacle" aria-hidden="true"></span>
           <span>Evitá los círculos de colores</span>
         </div>
-        <div class="legend-row">
-          <span class="legend-dot target" aria-hidden="true"></span>
-          <span>Alcanzá la luz verde</span>
-        </div>
         <p class="tuning-note">Un clic para entrar · Escape para pausar y liberar el mouse.</p>
       </div>
     </aside>
@@ -1032,13 +963,8 @@
       OBSTACLE_COLLISION_ITERATIONS: 2,
       IMPACT_PAUSE_MS: 900,          // Duración del cartel de impacto.
       PROTECTION_MS: 1750,           // Protección total después de un impacto.
-      TARGET_RESPAWN_MS: 320,
-      TARGET_COVERED_RELOCATE_MS: 650,
-      TARGET_SAFE_CLEARANCE: 26,
-      TARGET_MIN_TRAVEL_RATIO: 0.32,
       MAX_FRAME_SECONDS: 0.035,
       PLAYER_COLOR: "#38e8ff",
-      TARGET_COLOR: "#57ee9a",
       OBSTACLE_COLORS: ["#ff5576", "#ff9f43", "#ffda57", "#d96cff"]
     });
 
@@ -1049,8 +975,6 @@
         obstacleSpeed: 200,
         spawnIntervalSeconds: 15,
         totalObstacles: 4,
-        targetRadius: 42,
-        targetLifetimeSeconds: 12,
         durationSeconds: 60
       }),
       medium: Object.freeze({
@@ -1059,8 +983,6 @@
         obstacleSpeed: 240,
         spawnIntervalSeconds: 12,
         totalObstacles: 8,
-        targetRadius: 38,
-        targetLifetimeSeconds: 9,
         durationSeconds: 180
       }),
       advanced: Object.freeze({
@@ -1069,8 +991,6 @@
         obstacleSpeed: 290,
         spawnIntervalSeconds: 8,
         totalObstacles: 12,
-        targetRadius: 34,
-        targetLifetimeSeconds: 7,
         durationSeconds: 300
       })
     });
@@ -1096,21 +1016,17 @@
     const settingInputs = Object.freeze({
       playerRadius: document.getElementById("playerSizeInput"),
       obstacleRadius: document.getElementById("obstacleSizeInput"),
-      targetRadius: document.getElementById("targetSizeInput"),
       obstacleSpeed: document.getElementById("speedInput"),
       spawnIntervalSeconds: document.getElementById("spawnInput"),
       totalObstacles: document.getElementById("totalInput"),
-      targetLifetimeSeconds: document.getElementById("targetTimeInput"),
       durationSeconds: document.getElementById("durationInput")
     });
     const settingOutputs = Object.freeze({
       playerRadius: document.getElementById("playerSizeOutput"),
       obstacleRadius: document.getElementById("obstacleSizeOutput"),
-      targetRadius: document.getElementById("targetSizeOutput"),
       obstacleSpeed: document.getElementById("speedOutput"),
       spawnIntervalSeconds: document.getElementById("spawnOutput"),
-      totalObstacles: document.getElementById("totalOutput"),
-      targetLifetimeSeconds: document.getElementById("targetTimeOutput")
+      totalObstacles: document.getElementById("totalOutput")
     });
 
     const canvas = document.getElementById("gameCanvas");
@@ -1120,7 +1036,6 @@
     const messageCard = document.getElementById("messageCard");
     const timeValue = document.getElementById("timeValue");
     const impactValue = document.getElementById("impactValue");
-    const targetValue = document.getElementById("targetValue");
     const obstacleValue = document.getElementById("obstacleValue");
     const streakValue = document.getElementById("streakValue");
     const statusValue = document.getElementById("statusValue");
@@ -1137,16 +1052,6 @@
     let customSettings = { ...DIFFICULTY_PRESETS.initial };
     let activeSettings = { ...DIFFICULTY_PRESETS.initial };
     let spawnSchedule = [];
-
-    const guideTarget = {
-      x: 0,
-      y: 0,
-      radius: activeSettings.targetRadius,
-      state: "waiting",
-      remainingMs: 0,
-      respawnRemainingMs: 0,
-      coveredMs: 0
-    };
 
     const player = {
       x: 0,
@@ -1165,8 +1070,6 @@
     let obstacles = [];
     let nextObstacleIndex = 0;
     let impacts = 0;
-    let targetsReached = 0;
-    let targetsMissed = 0;
     let elapsedMs = 0;
     let remainingMs = activeSettings.durationSeconds * 1000;
     let impactPauseRemainingMs = 0;
@@ -1187,21 +1090,17 @@
     function updateSettingOutputs(settings) {
       settingOutputs.playerRadius.textContent = `${settings.playerRadius} px`;
       settingOutputs.obstacleRadius.textContent = `${settings.obstacleRadius} px`;
-      settingOutputs.targetRadius.textContent = `${settings.targetRadius} px`;
       settingOutputs.obstacleSpeed.textContent = `${settings.obstacleSpeed} px/s`;
       settingOutputs.spawnIntervalSeconds.textContent = `${settings.spawnIntervalSeconds} s`;
       settingOutputs.totalObstacles.textContent = String(settings.totalObstacles);
-      settingOutputs.targetLifetimeSeconds.textContent = `${settings.targetLifetimeSeconds} s`;
     }
 
     function writeSettingsToControls(settings) {
       settingInputs.playerRadius.value = String(settings.playerRadius);
       settingInputs.obstacleRadius.value = String(settings.obstacleRadius);
-      settingInputs.targetRadius.value = String(settings.targetRadius);
       settingInputs.obstacleSpeed.value = String(settings.obstacleSpeed);
       settingInputs.spawnIntervalSeconds.value = String(settings.spawnIntervalSeconds);
       settingInputs.totalObstacles.value = String(settings.totalObstacles);
-      settingInputs.targetLifetimeSeconds.value = String(settings.targetLifetimeSeconds);
       settingInputs.durationSeconds.value = String(settings.durationSeconds ?? 0);
       updateSettingOutputs(settings);
     }
@@ -1210,11 +1109,9 @@
       return {
         playerRadius: Number(settingInputs.playerRadius.value),
         obstacleRadius: Number(settingInputs.obstacleRadius.value),
-        targetRadius: Number(settingInputs.targetRadius.value),
         obstacleSpeed: Number(settingInputs.obstacleSpeed.value),
         spawnIntervalSeconds: Number(settingInputs.spawnIntervalSeconds.value),
         totalObstacles: Number(settingInputs.totalObstacles.value),
-        targetLifetimeSeconds: Number(settingInputs.targetLifetimeSeconds.value),
         durationSeconds: Number(settingInputs.durationSeconds.value) || null
       };
     }
@@ -1309,7 +1206,6 @@
     function updateHud() {
       timeValue.textContent = formatTime(remainingMs);
       impactValue.textContent = String(impacts);
-      targetValue.textContent = String(targetsReached);
       obstacleValue.textContent = String(countActiveObstacles());
       streakValue.textContent = formatSeconds(bestStreakMs);
     }
@@ -1323,7 +1219,7 @@
       messageCard.innerHTML = `
         <div class="message-icon" aria-hidden="true">✦</div>
         <h2 class="message-title">Entrá al campo</h2>
-        <p class="message-text">Hacé un clic izquierdo para comenzar. Movete hacia la luz verde sin tocar los obstáculos.</p>
+        <p class="message-text">Hacé un clic izquierdo para comenzar. Después solo tenés que mover el mouse.</p>
       `;
     }
 
@@ -1368,8 +1264,6 @@
         <p class="message-text">Completaste ${formatDuration(activeSettings.durationSeconds)} de movimiento y precisión.</p>
         <div class="results">
           <div class="result-box"><strong>${impacts}</strong><span>Impactos</span></div>
-          <div class="result-box"><strong>${targetsReached}</strong><span>Objetivos alcanzados</span></div>
-          <div class="result-box"><strong>${targetsMissed}</strong><span>Objetivos vencidos</span></div>
           <div class="result-box"><strong>${formatSeconds(finalStreak)}</strong><span>Mejor tramo</span></div>
         </div>
         <div class="message-actions">
@@ -1416,14 +1310,6 @@
         obstacle.x = clamp(obstacle.x, obstacle.radius, arenaWidth - obstacle.radius);
         obstacle.y = clamp(obstacle.y, obstacle.radius, arenaHeight - obstacle.radius);
       }
-
-      if (guideTarget.state === "active") {
-        guideTarget.x = clamp(guideTarget.x, guideTarget.radius, arenaWidth - guideTarget.radius);
-        guideTarget.y = clamp(guideTarget.y, guideTarget.radius, arenaHeight - guideTarget.radius);
-        if (!isGuidePositionSafe(guideTarget.x, guideTarget.y, false)) {
-          placeGuideTarget();
-        }
-      }
     }
 
     function createObstacle(index) {
@@ -1455,12 +1341,6 @@
     function addWarningObstacle() {
       obstacles.push(createObstacle(nextObstacleIndex));
       nextObstacleIndex += 1;
-      if (
-        guideTarget.state === "active" &&
-        !isGuidePositionSafe(guideTarget.x, guideTarget.y, false)
-      ) {
-        placeGuideTarget();
-      }
       updateHud();
     }
 
@@ -1470,160 +1350,12 @@
       addWarningObstacle();
     }
 
-    function isGuidePositionSafe(x, y, requireTravelDistance = true) {
-      const edgeMargin = guideTarget.radius + 18;
-      if (
-        x < edgeMargin ||
-        x > arenaWidth - edgeMargin ||
-        y < edgeMargin ||
-        y > arenaHeight - edgeMargin
-      ) {
-        return false;
-      }
-
-      const playerDistance = Math.hypot(x - player.x, y - player.y);
-      const minimumTravelDistance = Math.max(
-        player.radius + guideTarget.radius + GAME_CONFIG.TARGET_SAFE_CLEARANCE,
-        Math.min(arenaWidth, arenaHeight) * GAME_CONFIG.TARGET_MIN_TRAVEL_RATIO
-      );
-      if (requireTravelDistance && playerDistance < minimumTravelDistance) {
-        return false;
-      }
-
-      return obstacles.every((obstacle) => {
-        const minimumDistance =
-          obstacle.radius + guideTarget.radius + GAME_CONFIG.TARGET_SAFE_CLEARANCE;
-        return Math.hypot(x - obstacle.x, y - obstacle.y) >= minimumDistance;
-      });
-    }
-
-    function guidePositionClearance(x, y) {
-      let clearance = Math.hypot(x - player.x, y - player.y) - player.radius - guideTarget.radius;
-      for (const obstacle of obstacles) {
-        clearance = Math.min(
-          clearance,
-          Math.hypot(x - obstacle.x, y - obstacle.y) - obstacle.radius - guideTarget.radius
-        );
-      }
-      return clearance;
-    }
-
-    function placeGuideTarget() {
-      guideTarget.radius = activeSettings.targetRadius;
-      const edgeMargin = guideTarget.radius + 18;
-      const minimumX = edgeMargin;
-      const maximumX = Math.max(minimumX, arenaWidth - edgeMargin);
-      const minimumY = edgeMargin;
-      const maximumY = Math.max(minimumY, arenaHeight - edgeMargin);
-
-      for (let attempt = 0; attempt < 100; attempt += 1) {
-        const candidateX = minimumX + Math.random() * (maximumX - minimumX);
-        const candidateY = minimumY + Math.random() * (maximumY - minimumY);
-        if (isGuidePositionSafe(candidateX, candidateY, true)) {
-          guideTarget.x = candidateX;
-          guideTarget.y = candidateY;
-          guideTarget.state = "active";
-          guideTarget.remainingMs = activeSettings.targetLifetimeSeconds * 1000;
-          guideTarget.respawnRemainingMs = 0;
-          guideTarget.coveredMs = 0;
-          return;
-        }
-      }
-
-      let bestCandidate = { x: minimumX, y: minimumY, clearance: Number.NEGATIVE_INFINITY };
-      const columns = 10;
-      const rows = 6;
-      for (let row = 0; row < rows; row += 1) {
-        for (let column = 0; column < columns; column += 1) {
-          const candidateX = minimumX + (column / (columns - 1)) * (maximumX - minimumX);
-          const candidateY = minimumY + (row / (rows - 1)) * (maximumY - minimumY);
-          const clearance = guidePositionClearance(candidateX, candidateY);
-          if (clearance > bestCandidate.clearance) {
-            bestCandidate = { x: candidateX, y: candidateY, clearance };
-          }
-        }
-      }
-
-      guideTarget.x = bestCandidate.x;
-      guideTarget.y = bestCandidate.y;
-      guideTarget.state = "active";
-      guideTarget.remainingMs = activeSettings.targetLifetimeSeconds * 1000;
-      guideTarget.respawnRemainingMs = 0;
-      guideTarget.coveredMs = 0;
-    }
-
-    function scheduleGuideRespawn(wasMissed) {
-      if (wasMissed) {
-        targetsMissed += 1;
-      } else {
-        targetsReached += 1;
-        playShell.classList.remove("is-target-collected");
-        void playShell.offsetWidth;
-        playShell.classList.add("is-target-collected");
-      }
-
-      guideTarget.state = "waiting";
-      guideTarget.remainingMs = 0;
-      guideTarget.respawnRemainingMs = GAME_CONFIG.TARGET_RESPAWN_MS;
-      guideTarget.coveredMs = 0;
-      updateHud();
-    }
-
-    function checkGuideTargetContact() {
-      if (phase !== PHASE.RUNNING || guideTarget.state !== "active") {
-        return;
-      }
-
-      const combinedRadius = player.radius + guideTarget.radius;
-      const distanceSquared = segmentDistanceSquared(
-        guideTarget.x,
-        guideTarget.y,
-        player.previousX,
-        player.previousY,
-        player.x,
-        player.y
-      );
-      if (distanceSquared <= combinedRadius * combinedRadius) {
-        scheduleGuideRespawn(false);
-      }
-    }
-
-    function updateGuideTarget(deltaMs) {
-      if (guideTarget.state === "waiting") {
-        guideTarget.respawnRemainingMs -= deltaMs;
-        if (guideTarget.respawnRemainingMs <= 0) {
-          placeGuideTarget();
-        }
-        return;
-      }
-
-      guideTarget.remainingMs -= deltaMs;
-      if (guideTarget.remainingMs <= 0) {
-        scheduleGuideRespawn(true);
-        return;
-      }
-
-      const isCovered = obstacles.some((obstacle) => {
-        if (obstacle.state !== "active") {
-          return false;
-        }
-        return Math.hypot(guideTarget.x - obstacle.x, guideTarget.y - obstacle.y) <
-          guideTarget.radius + obstacle.radius;
-      });
-      guideTarget.coveredMs = isCovered ? guideTarget.coveredMs + deltaMs : 0;
-      if (guideTarget.coveredMs >= GAME_CONFIG.TARGET_COVERED_RELOCATE_MS) {
-        placeGuideTarget();
-      }
-    }
-
     function resetGame() {
       phase = PHASE.READY;
       phaseBeforePause = PHASE.RUNNING;
       pointerLockRequestPending = false;
       pointerLockAttemptId += 1;
       impacts = 0;
-      targetsReached = 0;
-      targetsMissed = 0;
       elapsedMs = 0;
       remainingMs = activeSettings.durationSeconds === null
         ? Number.POSITIVE_INFINITY
@@ -1642,11 +1374,7 @@
       player.previousX = player.x;
       player.previousY = player.y;
       prepareObstacles();
-      guideTarget.state = "waiting";
-      guideTarget.radius = activeSettings.targetRadius;
-      placeGuideTarget();
       playShell.classList.remove("is-impact");
-      playShell.classList.remove("is-target-collected");
       setStatus("Listo");
       updateHud();
       showReadyMessage();
@@ -1754,7 +1482,6 @@
       player.y = clamp(player.y + event.movementY, player.radius, arenaHeight - player.radius);
 
       checkPlayerPathCollision();
-      checkGuideTargetContact();
     }
 
     function requestGamePointerLock() {
@@ -2089,7 +1816,6 @@
 
       resolveObstacleCollisions();
       addScheduledObstacles();
-      updateGuideTarget(deltaMs);
       checkCurrentCollision();
 
       if (protectionRemainingMs > 0 && phase === PHASE.RUNNING) {
@@ -2125,56 +1851,6 @@
       context.arc(x, y, radius, 0, Math.PI * 2);
       context.fill();
       context.lineWidth = lineWidth;
-      context.strokeStyle = "rgba(255, 255, 255, 0.9)";
-      context.stroke();
-      context.restore();
-    }
-
-    function drawGuideTarget() {
-      if (guideTarget.state !== "active") {
-        return;
-      }
-
-      const pulse = 1 + Math.sin(performance.now() * 0.006) * 0.06;
-      const lifetimeMs = activeSettings.targetLifetimeSeconds * 1000;
-      const remainingRatio = clamp(guideTarget.remainingMs / lifetimeMs, 0, 1);
-
-      context.save();
-      drawCircle(
-        guideTarget.x,
-        guideTarget.y,
-        guideTarget.radius * pulse,
-        GAME_CONFIG.TARGET_COLOR,
-        "rgba(87, 238, 154, 0.9)",
-        4
-      );
-
-      context.strokeStyle = "rgba(255, 255, 255, 0.24)";
-      context.lineWidth = 5;
-      context.beginPath();
-      context.arc(guideTarget.x, guideTarget.y, guideTarget.radius + 12, 0, Math.PI * 2);
-      context.stroke();
-
-      context.strokeStyle = GAME_CONFIG.TARGET_COLOR;
-      context.shadowColor = GAME_CONFIG.TARGET_COLOR;
-      context.shadowBlur = 10;
-      context.lineCap = "round";
-      context.beginPath();
-      context.arc(
-        guideTarget.x,
-        guideTarget.y,
-        guideTarget.radius + 12,
-        -Math.PI / 2,
-        -Math.PI / 2 + Math.PI * 2 * remainingRatio
-      );
-      context.stroke();
-
-      context.shadowBlur = 0;
-      context.fillStyle = "rgba(6, 38, 32, 0.68)";
-      context.beginPath();
-      context.arc(guideTarget.x, guideTarget.y, guideTarget.radius * 0.34, 0, Math.PI * 2);
-      context.fill();
-      context.lineWidth = 3;
       context.strokeStyle = "rgba(255, 255, 255, 0.9)";
       context.stroke();
       context.restore();
@@ -2255,7 +1931,6 @@
 
     function drawScene() {
       context.clearRect(0, 0, arenaWidth, arenaHeight);
-      drawGuideTarget();
       for (const obstacle of obstacles) {
         drawObstacle(obstacle);
       }

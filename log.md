@@ -74,3 +74,29 @@ Velocidad constante y activación segura de obstáculos.
 - Los obstáculos en advertencia continúan siendo intangibles y permanecen quietos durante los tres parpadeos.
 - Antes de activarse, un obstáculo superpuesto busca el espacio libre más cercano sin empujar ni desviar a los obstáculos activos.
 - La colisión física comienza solamente después de que el nuevo obstáculo está separado y activo.
+
+## ver_08 — 24 de agosto de 2026
+
+Menú principal y configuración de dificultad.
+
+- Se agregó una portada visual con los botones `Jugar` y `Configuración`.
+- Se incorporaron los perfiles Inicial, Medio y Avanzado con valores preparados de tamaño, velocidad, frecuencia, cantidad y duración.
+- El perfil Personalizado habilita controles independientes para el tamaño del jugador, el tamaño de los obstáculos, la velocidad, la frecuencia de aparición, la cantidad total y la duración.
+- Las duraciones disponibles son 1, 3 y 5 minutos, además de una modalidad sin límite de tiempo.
+- La configuración seleccionada se aplica al tamaño de los círculos, su velocidad constante, el calendario de apariciones y el reloj de la partida.
+- La pausa y el reporte final permiten regresar al menú principal.
+- La pantalla de configuración se compacta en monitores de poca altura para mantener visibles las acciones principales.
+
+## ver_09 — 24 de agosto de 2026
+
+Primera implementación de la Luz guía.
+
+- Se agregó un objetivo verde estático que se alcanza por contacto, sin utilizar botones del mouse.
+- La luz aparece en posiciones aleatorias alejadas del jugador y separadas de obstáculos activos o en advertencia.
+- Al alcanzarla suma una meta, produce un destello verde suave y reaparece después de una pausa breve.
+- Un aro exterior indica visualmente el tiempo disponible; si vence, la luz cambia de lugar y se registra como objetivo vencido sin provocar impacto.
+- Si un obstáculo cubre la luz durante un momento, esta se reubica sin penalización.
+- El HUD muestra las metas alcanzadas y el reporte final incluye alcanzadas y vencidas.
+- Los perfiles Inicial, Medio y Avanzado incorporan tamaños y tiempos propios para la luz guía.
+- El modo Personalizado permite modificar el tamaño de la luz y el tiempo disponible para alcanzarla.
+- La etiqueta de configuración `Cantidad total` se aclaró como `Cantidad de obstáculos`.
