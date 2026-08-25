@@ -100,3 +100,17 @@ Primera implementación de la Luz guía.
 - Los perfiles Inicial, Medio y Avanzado incorporan tamaños y tiempos propios para la luz guía.
 - El modo Personalizado permite modificar el tamaño de la luz y el tiempo disponible para alcanzarla.
 - La etiqueta de configuración `Cantidad total` se aclaró como `Cantidad de obstáculos`.
+
+## ver_10 — 25 de agosto de 2026
+
+Reloj continuo durante impactos y primera capa de audio.
+
+- El tiempo general de la partida continúa descendiendo mientras se muestra el aviso de impacto.
+- La partida puede llegar a cero y finalizar directamente desde el estado de impacto.
+- La pausa manual con Escape continúa deteniendo el reloj.
+- Se agregó un efecto sintetizado ascendente al alcanzar una luz verde.
+- Se agregó un efecto sintetizado descendente al producirse un impacto.
+- El código quedó preparado para reproducir `music.mp3` en bucle desde el inicio efectivo de la partida hasta su finalización.
+- La música se pausa junto con la pausa manual, continúa durante los impactos y se detiene al terminar o regresar al menú.
+- Configuración incorpora controles independientes para activar efectos y música, además de un volumen separado para cada canal.
+- Los controles de volumen quedan deshabilitados visual y funcionalmente al apagar su canal.
