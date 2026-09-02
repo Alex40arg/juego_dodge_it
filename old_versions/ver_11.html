@@ -409,17 +409,6 @@
       animation: targetFlash 360ms ease-out;
     }
 
-    .target-feedback {
-      position: absolute;
-      inset: 0;
-      z-index: 2;
-      border: 2px solid var(--green);
-      border-radius: inherit;
-      background: transparent;
-      opacity: 0;
-      pointer-events: none;
-    }
-
     @keyframes impactFlash {
       0%, 100% { box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34); }
       30% { box-shadow: inset 0 0 110px rgba(255, 54, 91, 0.56), 0 0 32px rgba(255, 54, 91, 0.68); }
@@ -703,8 +692,7 @@
       min-height: 26px;
     }
 
-    .setting-control select,
-    .visual-settings select {
+    .setting-control select {
       padding: 10px 12px;
       border: 1px solid rgba(100, 158, 201, 0.62);
       border-radius: 10px;
@@ -727,24 +715,6 @@
 
     .config-note strong {
       color: var(--cyan);
-    }
-
-    .visual-settings {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 10px 20px;
-      margin-top: 14px;
-    }
-
-    .visual-settings .section-heading {
-      margin: 0;
-    }
-
-    .visual-settings select {
-      flex: 1 1 300px;
-      min-width: 0;
-      max-width: 100%;
     }
 
     .audio-settings {
@@ -1098,14 +1068,6 @@
 
         <p class="config-note" id="configNote"><strong>Nivel Inicial:</strong> una práctica breve y tranquila para familiarizarse con el movimiento.</p>
 
-        <section class="visual-settings" aria-labelledby="visualQualityLabel">
-          <label class="section-heading" id="visualQualityLabel" for="visualQualityInput">Calidad visual</label>
-          <select id="visualQualityInput">
-            <option value="full" selected>Completa — Efectos y luces</option>
-            <option value="compatibility">Compatibilidad — Mejor rendimiento en PCs antiguas</option>
-          </select>
-        </section>
-
         <section class="audio-settings" aria-labelledby="audioSettingsTitle">
           <p class="section-heading" id="audioSettingsTitle">Audio</p>
           <div class="audio-grid">
@@ -1197,7 +1159,6 @@
 
     <section class="play-shell" id="playShell" aria-label="Área de juego">
       <canvas id="gameCanvas" aria-label="Juego de práctica para mover el mouse"></canvas>
-      <div class="target-feedback" id="targetFeedback" aria-hidden="true"></div>
       <div class="overlay" id="overlay" aria-live="assertive">
         <div class="message-card" id="messageCard">
           <div class="message-icon" aria-hidden="true">✦</div>
@@ -1269,8 +1230,6 @@
     });
 
     const menuScreen = document.getElementById("menuScreen");
-    const visualQualityInput = document.getElementById("visualQualityInput");
-    const targetFeedback = document.getElementById("targetFeedback");
     const settingsScreen = document.getElementById("settingsScreen");
     const app = document.getElementById("app");
     const menuPlayButton = document.getElementById("menuPlayButton");
@@ -1328,25 +1287,6 @@
       PAUSED: "paused",
       FINISHED: "finished"
     });
-
-    // Perfiles de dibujo independientes de la dificultad y de la simulación.
-    const VISUAL_PROFILES = Object.freeze({
-      full: Object.freeze({
-        pixelRatio: () => Math.min(window.devicePixelRatio || 1, 2),
-        gradients: true,
-        circleGlow: 20,
-        targetRingGlow: 10
-      }),
-      compatibility: Object.freeze({
-        pixelRatio: () => 1,
-        gradients: false,
-        circleGlow: 0,
-        targetRingGlow: 0
-      })
-    });
-    let visualQuality = "full";
-    let visualProfile = VISUAL_PROFILES.full;
-    let targetFeedbackAnimation = null;
 
     let selectedPreset = "initial";
     let customSettings = { ...DIFFICULTY_PRESETS.initial };
@@ -1635,8 +1575,6 @@
     }
 
     function startConfiguredGame() {
-      visualQuality = visualQualityInput.value;
-      visualProfile = VISUAL_PROFILES[visualQuality];
       menuScreen.classList.add("screen-hidden");
       settingsScreen.classList.add("screen-hidden");
       app.classList.remove("screen-hidden");
@@ -1769,7 +1707,7 @@
       const rectangle = playShell.getBoundingClientRect();
       arenaWidth = Math.max(1, rectangle.width);
       arenaHeight = Math.max(1, rectangle.height);
-      const pixelRatio = visualProfile.pixelRatio();
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
 
       canvas.width = Math.round(arenaWidth * pixelRatio);
       canvas.height = Math.round(arenaHeight * pixelRatio);
@@ -1920,30 +1858,15 @@
       guideTarget.coveredMs = 0;
     }
 
-    function flashGuideTarget() {
-      if (visualQuality === "compatibility") {
-        // Reiniciar solo opacity, sin leer medidas ni forzar layout.
-        targetFeedbackAnimation?.cancel();
-        targetFeedbackAnimation = targetFeedback.animate([
-          { opacity: 0, offset: 0 },
-          { opacity: 1, offset: 0.45 },
-          { opacity: 0, offset: 1 }
-        ], { duration: 360, easing: "ease-out" });
-        return;
-      }
-
-      playShell.classList.remove("is-target-collected");
-      void playShell.offsetWidth;
-      playShell.classList.add("is-target-collected");
-    }
-
     function scheduleGuideRespawn(wasMissed) {
       if (wasMissed) {
         targetsMissed += 1;
       } else {
         targetsReached += 1;
         playApprovalSound();
-        flashGuideTarget();
+        playShell.classList.remove("is-target-collected");
+        void playShell.offsetWidth;
+        playShell.classList.add("is-target-collected");
       }
 
       guideTarget.state = "waiting";
@@ -2032,8 +1955,6 @@
       placeGuideTarget();
       playShell.classList.remove("is-impact");
       playShell.classList.remove("is-target-collected");
-      targetFeedbackAnimation?.cancel();
-      targetFeedbackAnimation = null;
       setStatus("Listo");
       updateHud();
       showReadyMessage();
@@ -2505,23 +2426,19 @@
     function drawCircle(x, y, radius, fill, glow, lineWidth = 3) {
       context.save();
       context.shadowColor = glow;
-      context.shadowBlur = visualProfile.circleGlow;
-      if (visualProfile.gradients) {
-        const gradient = context.createRadialGradient(
-          x - radius * 0.35,
-          y - radius * 0.4,
-          radius * 0.12,
-          x,
-          y,
-          radius
-        );
-        gradient.addColorStop(0, "#ffffff");
-        gradient.addColorStop(0.16, fill);
-        gradient.addColorStop(1, fill);
-        context.fillStyle = gradient;
-      } else {
-        context.fillStyle = fill;
-      }
+      context.shadowBlur = 20;
+      const gradient = context.createRadialGradient(
+        x - radius * 0.35,
+        y - radius * 0.4,
+        radius * 0.12,
+        x,
+        y,
+        radius
+      );
+      gradient.addColorStop(0, "#ffffff");
+      gradient.addColorStop(0.16, fill);
+      gradient.addColorStop(1, fill);
+      context.fillStyle = gradient;
       context.beginPath();
       context.arc(x, y, radius, 0, Math.PI * 2);
       context.fill();
@@ -2558,7 +2475,7 @@
 
       context.strokeStyle = GAME_CONFIG.TARGET_COLOR;
       context.shadowColor = GAME_CONFIG.TARGET_COLOR;
-      context.shadowBlur = visualProfile.targetRingGlow;
+      context.shadowBlur = 10;
       context.lineCap = "round";
       context.beginPath();
       context.arc(
