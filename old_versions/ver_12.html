@@ -1,0 +1,2762 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Esquivá - Práctica de movimiento del mouse</title>
+  <style>
+    :root {
+      --bg-deep: #050c18;
+      --bg: #091426;
+      --panel: #0d1c31;
+      --panel-light: #132842;
+      --line: #29435f;
+      --text: #f7fbff;
+      --muted: #aec2d8;
+      --cyan: #38e8ff;
+      --green: #57ee9a;
+      --yellow: #ffd75e;
+      --danger: #ff5576;
+      --sidebar-width: clamp(240px, 19vw, 300px);
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: var(--bg-deep);
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 12% 18%, rgba(41, 129, 196, 0.16), transparent 30%),
+        radial-gradient(circle at 85% 80%, rgba(21, 193, 175, 0.1), transparent 35%),
+        var(--bg-deep);
+    }
+
+    .screen-hidden {
+      display: none !important;
+    }
+
+    .front-screen {
+      position: relative;
+      width: 100vw;
+      height: 100dvh;
+      min-height: 420px;
+      overflow: auto;
+      padding: clamp(18px, 3vw, 46px);
+      background:
+        linear-gradient(rgba(82, 134, 174, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(82, 134, 174, 0.045) 1px, transparent 1px),
+        radial-gradient(circle at 18% 30%, rgba(56, 232, 255, 0.13), transparent 34%),
+        radial-gradient(circle at 82% 72%, rgba(217, 108, 255, 0.12), transparent 32%),
+        var(--bg-deep);
+      background-size: 52px 52px, 52px 52px, auto, auto, auto;
+    }
+
+    .menu-layout {
+      width: min(1500px, 100%);
+      min-height: calc(100dvh - clamp(36px, 6vw, 92px));
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(340px, 0.65fr);
+      gap: clamp(28px, 5vw, 82px);
+      align-items: center;
+    }
+
+    .menu-copy {
+      position: relative;
+      z-index: 1;
+      padding-left: clamp(0px, 3vw, 48px);
+    }
+
+    .menu-title {
+      margin: 8px 0 0;
+      font-size: clamp(4.5rem, 11vw, 10rem);
+      line-height: 0.82;
+      letter-spacing: -0.075em;
+      text-shadow: 0 0 55px rgba(56, 232, 255, 0.18);
+    }
+
+    .menu-lead {
+      max-width: 720px;
+      margin: clamp(24px, 4vw, 46px) 0 0;
+      color: #c6d9ea;
+      font-size: clamp(1.15rem, 1.8vw, 1.7rem);
+      line-height: 1.45;
+    }
+
+    .menu-demo {
+      position: relative;
+      width: min(720px, 92%);
+      height: clamp(150px, 22vh, 245px);
+      margin-top: clamp(28px, 5vh, 56px);
+      overflow: hidden;
+      border: 1px solid rgba(75, 127, 169, 0.48);
+      border-radius: 30px;
+      background: rgba(6, 19, 35, 0.68);
+      box-shadow: inset 0 0 60px rgba(25, 93, 135, 0.18);
+    }
+
+    .menu-demo::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(82, 134, 174, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(82, 134, 174, 0.06) 1px, transparent 1px);
+      background-size: 36px 36px;
+    }
+
+    .demo-orb {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      border: 3px solid rgba(255, 255, 255, 0.82);
+      border-radius: 50%;
+      font-size: clamp(1.1rem, 2vw, 2rem);
+      font-weight: 900;
+    }
+
+    .demo-orb.player {
+      left: 13%;
+      top: 27%;
+      width: clamp(68px, 7vw, 96px);
+      aspect-ratio: 1;
+      color: white;
+      background: var(--cyan);
+      box-shadow: 0 0 28px rgba(56, 232, 255, 0.68);
+    }
+
+    .demo-orb.obstacle-one {
+      left: 49%;
+      top: 14%;
+      width: clamp(78px, 8vw, 112px);
+      aspect-ratio: 1;
+      color: rgba(7, 20, 36, 0.72);
+      background: var(--danger);
+      box-shadow: 0 0 28px rgba(255, 85, 118, 0.48);
+    }
+
+    .demo-orb.target {
+      right: 9%;
+      bottom: 8%;
+      width: clamp(72px, 7.4vw, 104px);
+      aspect-ratio: 1;
+      color: rgba(7, 20, 36, 0.72);
+      background: var(--green);
+      box-shadow: 0 0 28px rgba(87, 238, 154, 0.52);
+    }
+
+    .menu-panel,
+    .configuration-card {
+      position: relative;
+      z-index: 1;
+      border: 1px solid rgba(78, 128, 170, 0.58);
+      border-radius: 30px;
+      background: linear-gradient(150deg, rgba(18, 43, 70, 0.96), rgba(6, 18, 33, 0.98));
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.46);
+    }
+
+    .menu-panel {
+      padding: clamp(28px, 4vw, 52px);
+    }
+
+    .menu-panel h2 {
+      margin: 0;
+      font-size: clamp(1.8rem, 3vw, 2.8rem);
+      letter-spacing: -0.035em;
+    }
+
+    .menu-panel p {
+      margin: 12px 0 30px;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.5;
+    }
+
+    .front-actions {
+      display: grid;
+      gap: 8px;
+    }
+
+    #app {
+      width: 100vw;
+      height: 100dvh;
+      min-height: 420px;
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .hud {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: clamp(18px, 2vw, 28px);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background:
+        linear-gradient(150deg, rgba(20, 48, 78, 0.94), rgba(7, 20, 37, 0.98)),
+        var(--panel);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
+    }
+
+    .brand-kicker {
+      margin: -100px 0px 50px;  
+      /* margin: 0 0 2px; */
+      color: var(--cyan);
+      font-size: clamp(0.9rem, 1vw, 1.2rem);
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 3.5vw, 3.3rem);
+      line-height: 0.96;
+      letter-spacing: -0.045em;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: clamp(0.9rem, 1.1vw, 1.05rem);
+      line-height: 1.4;
+    }
+
+    .status-card {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      border: 1px solid rgba(95, 137, 177, 0.42);
+      border-radius: 17px;
+      background: rgba(4, 14, 27, 0.48);
+    }
+
+    .status-label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    .time-value {
+      color: var(--yellow);
+      font-size: clamp(2.6rem, 4.2vw, 4rem);
+      font-weight: 800;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 22px rgba(255, 215, 94, 0.24);
+    }
+
+    .guide-score {
+      min-width: 58px;
+      padding-left: 10px;
+      text-align: center;
+      border-left: 1px solid rgba(95, 137, 177, 0.34);
+    }
+
+    .guide-score strong {
+      display: block;
+      color: var(--green);
+      font-size: clamp(1.8rem, 2.5vw, 2.5rem);
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 18px rgba(87, 238, 154, 0.28);
+    }
+
+    .guide-score span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 0.56rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat {
+      min-width: 0;
+      padding: 13px 12px;
+      border: 1px solid rgba(95, 137, 177, 0.32);
+      border-radius: 15px;
+      background: rgba(4, 14, 27, 0.35);
+    }
+
+    .stat strong {
+      display: block;
+      overflow: hidden;
+      font-size: clamp(1.4rem, 2vw, 2rem);
+      line-height: 1.15;
+      text-overflow: ellipsis;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #statusValue {
+      font-size: clamp(1rem, 1.25vw, 1.35rem);
+    }
+
+    .stat span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .legend {
+      margin-top: auto;
+      display: grid;
+      gap: 12px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(95, 137, 177, 0.28);
+    }
+
+    .legend-row {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 10px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.25;
+    }
+
+    .legend-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+    }
+
+    .legend-dot.player {
+      border: 3px solid #fff;
+      background: var(--cyan);
+      box-shadow: 0 0 12px rgba(56, 232, 255, 0.65);
+    }
+
+    .legend-dot.obstacle {
+      border: 3px solid rgba(255, 255, 255, 0.82);
+      background: var(--danger);
+      box-shadow: 0 0 12px rgba(255, 85, 118, 0.48);
+    }
+
+    .legend-dot.target {
+      border: 3px solid #fff;
+      background: var(--green);
+      box-shadow: 0 0 14px rgba(87, 238, 154, 0.62);
+    }
+
+    .play-shell {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid #355778;
+      border-radius: 24px;
+      background: #081526;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
+      cursor: pointer;
+    }
+
+    .play-shell.is-pointer-locked {
+      cursor: none;
+    }
+
+    .play-shell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(82, 134, 174, 0.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(82, 134, 174, 0.055) 1px, transparent 1px),
+        radial-gradient(circle at 50% 50%, rgba(20, 67, 102, 0.35), transparent 62%);
+      background-size: 42px 42px, 42px 42px, auto;
+      z-index: 0;
+    }
+
+    .play-shell.is-impact {
+      animation: impactFlash 420ms ease-out;
+    }
+
+    .play-shell.is-target-collected {
+      animation: targetFlash 360ms ease-out;
+    }
+
+    .target-feedback {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      border: 2px solid var(--green);
+      border-radius: inherit;
+      background: transparent;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    @keyframes impactFlash {
+      0%, 100% { box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34); }
+      30% { box-shadow: inset 0 0 110px rgba(255, 54, 91, 0.56), 0 0 32px rgba(255, 54, 91, 0.68); }
+    }
+
+    @keyframes targetFlash {
+      0%, 100% { box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34); }
+      45% { box-shadow: inset 0 0 80px rgba(87, 238, 154, 0.2), 0 0 24px rgba(87, 238, 154, 0.42); }
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      pointer-events: none;
+      background: rgba(4, 12, 23, 0.28);
+      transition: background 160ms ease;
+    }
+
+    .overlay.is-hidden {
+      display: none;
+    }
+
+    .overlay.is-interactive {
+      pointer-events: auto;
+      cursor: default;
+      background: rgba(4, 12, 23, 0.76);
+    }
+
+    .message-card {
+      width: min(620px, 92%);
+      padding: clamp(24px, 4vw, 44px);
+      text-align: center;
+      border: 1px solid rgba(107, 158, 202, 0.62);
+      border-radius: 25px;
+      background: linear-gradient(145deg, rgba(18, 44, 72, 0.97), rgba(7, 20, 36, 0.98));
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
+    }
+
+    .message-icon {
+      width: 78px;
+      height: 78px;
+      margin: 0 auto 18px;
+      display: grid;
+      place-items: center;
+      border: 4px solid #fff;
+      border-radius: 50%;
+      color: #062135;
+      background: var(--cyan);
+      font-size: 2rem;
+      font-weight: 900;
+      box-shadow: 0 0 30px rgba(56, 232, 255, 0.58);
+    }
+
+    .message-title {
+      margin: 0;
+      font-size: clamp(2rem, 4.7vw, 4.2rem);
+      line-height: 1;
+      letter-spacing: -0.035em;
+    }
+
+    .message-text {
+      max-width: 480px;
+      margin: 16px auto 0;
+      color: #c5d8e9;
+      font-size: clamp(1.05rem, 1.7vw, 1.35rem);
+      line-height: 1.45;
+    }
+
+    .impact-message {
+      color: #fff;
+      font-size: clamp(2.7rem, 6.2vw, 5.4rem);
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      text-shadow: 0 0 18px rgba(255, 59, 96, 0.92), 0 0 60px rgba(255, 59, 96, 0.62);
+    }
+
+    .results {
+      margin: 24px 0 8px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .result-box {
+      padding: 15px;
+      border-radius: 15px;
+      background: rgba(3, 12, 24, 0.5);
+    }
+
+    .result-box strong {
+      display: block;
+      color: var(--yellow);
+      font-size: 1.7rem;
+    }
+
+    .result-box span {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    button {
+      min-width: 220px;
+      margin-top: 22px;
+      padding: 15px 24px;
+      border: 0;
+      border-radius: 14px;
+      color: #032033;
+      background: linear-gradient(180deg, #77f2ff, #32cde4);
+      font: inherit;
+      font-size: 1.12rem;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(27, 205, 231, 0.28);
+    }
+
+    button:hover,
+    button:focus-visible {
+      filter: brightness(1.1);
+      outline: 4px solid rgba(255, 255, 255, 0.75);
+      outline-offset: 3px;
+    }
+
+    .front-button,
+    .preset-button,
+    .small-button {
+      min-width: 0;
+      margin: 0;
+    }
+
+    .front-button {
+      width: 100%;
+      min-height: 62px;
+      font-size: 1.2rem;
+    }
+
+    .secondary-button {
+      color: var(--text);
+      border: 1px solid rgba(95, 151, 194, 0.65);
+      background: rgba(13, 34, 56, 0.86);
+      box-shadow: none;
+    }
+
+    .configuration-wrap {
+      width: min(1320px, 100%);
+      margin: 0 auto;
+    }
+
+    .configuration-header {
+      margin-bottom: clamp(18px, 3vw, 30px);
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .configuration-header h1 {
+      font-size: clamp(2.4rem, 5vw, 4.5rem);
+    }
+
+    .configuration-header p {
+      margin: 30px 0 0;
+      color: var(--muted);
+      font-size: 1.15rem;
+    }
+
+    .small-button {
+      min-height: 48px;
+      padding: 11px 20px;
+      white-space: nowrap;
+    }
+
+    .configuration-card {
+      padding: clamp(22px, 3vw, 38px);
+    }
+
+    .section-heading {
+      margin: 0 0 16px;
+      color: var(--cyan);
+      font-size: 0.82rem;
+      font-weight: 900;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .preset-button {
+      padding: 16px 14px;
+      color: var(--text);
+      border: 1px solid rgba(84, 135, 176, 0.58);
+      background: rgba(5, 18, 33, 0.7);
+      box-shadow: none;
+      text-align: left;
+    }
+
+    .preset-button strong,
+    .preset-button span {
+      display: block;
+    }
+
+    .preset-button strong {
+      font-size: 1.05rem;
+    }
+
+    .preset-button span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .preset-button.is-selected {
+      color: #032033;
+      border-color: white;
+      background: linear-gradient(180deg, #8af4ff, #38d7eb);
+      box-shadow: 0 0 26px rgba(56, 232, 255, 0.26);
+    }
+
+    .preset-button.is-selected span {
+      color: #17435a;
+    }
+
+    .settings-grid {
+      margin-top: 26px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .setting-control {
+      min-width: 0;
+      padding: 17px;
+      border: 1px solid rgba(77, 128, 169, 0.35);
+      border-radius: 17px;
+      background: rgba(4, 15, 29, 0.48);
+    }
+
+    .setting-control label {
+      display: flex;
+      gap: 10px;
+      align-items: baseline;
+      justify-content: space-between;
+      color: #dceaf5;
+      font-size: 0.92rem;
+      font-weight: 750;
+    }
+
+    .setting-output {
+      color: var(--yellow);
+      font-size: 1rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .setting-control input,
+    .setting-control select {
+      width: 100%;
+      margin-top: 15px;
+      accent-color: var(--cyan);
+    }
+
+    .setting-control input {
+      min-height: 26px;
+    }
+
+    .setting-control select,
+    .visual-settings select {
+      padding: 10px 12px;
+      border: 1px solid rgba(100, 158, 201, 0.62);
+      border-radius: 10px;
+      color: var(--text);
+      background: #0b2037;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .setting-control.is-disabled {
+      opacity: 0.5;
+    }
+
+    .config-note {
+      margin: 20px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .config-note strong {
+      color: var(--cyan);
+    }
+
+    .visual-settings {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px 20px;
+      margin-top: 14px;
+    }
+
+    .visual-settings .section-heading {
+      margin: 0;
+    }
+
+    .visual-settings select {
+      flex: 1 1 300px;
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .audio-settings {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(95, 137, 177, 0.28);
+    }
+
+    .audio-settings .section-heading {
+      margin-bottom: 10px;
+    }
+
+    .audio-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .audio-control {
+      min-width: 0;
+      padding: 13px 16px;
+      display: grid;
+      grid-template-columns: minmax(150px, auto) minmax(150px, 1fr);
+      gap: 18px;
+      align-items: center;
+      border: 1px solid rgba(77, 128, 169, 0.35);
+      border-radius: 15px;
+      background: rgba(4, 15, 29, 0.48);
+    }
+
+    .audio-toggle {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      color: #dceaf5;
+      font-size: 0.94rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .audio-toggle input {
+      width: 46px;
+      height: 25px;
+      margin: 0;
+      appearance: none;
+      border: 1px solid rgba(116, 159, 196, 0.72);
+      border-radius: 999px;
+      background: #071728;
+      cursor: pointer;
+      transition: background 150ms ease, border-color 150ms ease;
+    }
+
+    .audio-toggle input::before {
+      content: "";
+      display: block;
+      width: 17px;
+      height: 17px;
+      margin: 3px;
+      border-radius: 50%;
+      background: #829ab2;
+      transition: transform 150ms ease, background 150ms ease;
+    }
+
+    .audio-toggle input:checked {
+      border-color: var(--cyan);
+      background: rgba(56, 232, 255, 0.24);
+    }
+
+    .audio-toggle input:checked::before {
+      transform: translateX(21px);
+      background: var(--cyan);
+      box-shadow: 0 0 10px rgba(56, 232, 255, 0.6);
+    }
+
+    .audio-toggle input:focus-visible {
+      outline: 3px solid rgba(255, 255, 255, 0.78);
+      outline-offset: 3px;
+    }
+
+    .audio-volume label {
+      display: flex;
+      gap: 10px;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 750;
+    }
+
+    .audio-volume output {
+      color: var(--yellow);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .audio-volume input {
+      width: 100%;
+      min-height: 22px;
+      margin-top: 5px;
+      accent-color: var(--cyan);
+    }
+
+    .audio-volume.is-disabled {
+      opacity: 0.42;
+    }
+
+    .configuration-actions {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .message-actions {
+      margin-top: 22px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .message-actions button {
+      margin: 0;
+    }
+
+    @media (max-height: 800px) and (min-width: 761px) {
+      #settingsScreen {
+        padding-top: 14px;
+        padding-bottom: 14px;
+      }
+
+      .configuration-header {
+        margin-bottom: 14px;
+      }
+
+      .configuration-header h1 {
+        font-size: clamp(2.2rem, 4vw, 3.4rem);
+      }
+
+      .configuration-card {
+        padding: 22px 28px;
+      }
+
+      .preset-button {
+        padding: 12px 14px;
+      }
+
+      .settings-grid {
+        margin-top: 18px;
+      }
+
+      .setting-control {
+        padding: 13px 16px;
+      }
+
+      .setting-control input,
+      .setting-control select {
+        margin-top: 8px;
+      }
+
+      .config-note {
+        margin-top: 12px;
+      }
+
+      .audio-settings {
+        margin-top: 10px;
+        padding-top: 10px;
+      }
+
+      .audio-control {
+        padding-top: 9px;
+        padding-bottom: 9px;
+      }
+
+      .configuration-actions {
+        margin-top: 14px;
+      }
+
+      .front-button {
+        min-height: 54px;
+        padding-top: 12px;
+        padding-bottom: 12px;
+      }
+    }
+
+    @media (max-width: 1100px) {
+      .settings-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .tuning-note {
+      margin: 0;
+      color: #829ab2;
+      font-size: 0.72rem;
+      line-height: 1.35;
+    }
+
+    @media (max-width: 760px) {
+      :root {
+        --sidebar-width: 190px;
+      }
+
+      #app {
+        gap: 8px;
+        padding: 8px;
+      }
+
+      .hud {
+        gap: 10px;
+        padding: 14px;
+        border-radius: 18px;
+      }
+
+      .play-shell {
+        border-radius: 18px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .legend-row {
+        grid-template-columns: 27px 1fr;
+        font-size: 0.78rem;
+      }
+
+      .legend-dot {
+        width: 23px;
+        height: 23px;
+      }
+
+      .menu-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .menu-demo {
+        display: none;
+      }
+
+      .preset-grid,
+      .settings-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .audio-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .audio-control {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .configuration-header {
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="front-screen" id="menuScreen" aria-label="Menú principal">
+    <div class="menu-layout">
+      <div class="menu-copy">
+        <p class="brand-kicker">Práctica de movimiento del mouse</p>
+        <h1 class="menu-title">Esquivá</h1>
+        <p class="menu-lead">Recorré toda la pantalla, alcanzá la luz verde y evitá los obstáculos de colores.</p>
+        <div class="menu-demo" aria-hidden="true">
+          <span class="demo-orb player">✦</span>
+          <span class="demo-orb obstacle-one">×</span>
+          <span class="demo-orb target">•</span>
+        </div>
+      </div>
+
+      <div class="menu-panel">
+        <h2>¿Empezamos?</h2>
+        <p>Podés jugar directamente con el nivel Inicial o elegir una dificultad diferente.</p>
+        <div class="front-actions">
+          <button class="front-button" id="menuPlayButton" type="button">Jugar</button>
+          <button class="front-button secondary-button" id="openSettingsButton" type="button">Configuración</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="front-screen screen-hidden" id="settingsScreen" aria-label="Configuración del juego">
+    <div class="configuration-wrap">
+      <header class="configuration-header">
+        <div>
+          <p class="brand-kicker">Esquivá</p>
+          <h1>Configuración</h1>
+          <p>Elegí un nivel preparado o armá uno a tu medida.</p>
+        </div>
+        <button class="small-button secondary-button" id="settingsBackButton" type="button">← Volver</button>
+      </header>
+
+      <div class="configuration-card">
+        <p class="section-heading">Nivel de dificultad</p>
+        <div class="preset-grid" id="presetGrid">
+          <button class="preset-button is-selected" type="button" data-preset="initial">
+            <strong>Inicial</strong><span>Movimiento tranquilo · 1 minuto</span>
+          </button>
+          <button class="preset-button" type="button" data-preset="medium">
+            <strong>Medio</strong><span>Más velocidad · 3 minutos</span>
+          </button>
+          <button class="preset-button" type="button" data-preset="advanced">
+            <strong>Avanzado</strong><span>Mayor intensidad · 5 minutos</span>
+          </button>
+          <button class="preset-button" type="button" data-preset="custom">
+            <strong>Personalizado</strong><span>Todos los controles habilitados</span>
+          </button>
+        </div>
+
+        <div class="settings-grid">
+          <div class="setting-control" data-custom-control>
+            <label for="playerSizeInput">Tamaño del jugador <output class="setting-output" id="playerSizeOutput">50 px</output></label>
+            <input id="playerSizeInput" type="range" min="30" max="80" step="2" value="50" />
+          </div>
+          <div class="setting-control" data-custom-control>
+            <label for="obstacleSizeInput">Tamaño de obstáculos <output class="setting-output" id="obstacleSizeOutput">60 px</output></label>
+            <input id="obstacleSizeInput" type="range" min="30" max="90" step="2" value="60" />
+          </div>
+          <div class="setting-control" data-custom-control>
+            <label for="targetSizeInput">Tamaño de la luz guía <output class="setting-output" id="targetSizeOutput">42 px</output></label>
+            <input id="targetSizeInput" type="range" min="20" max="60" step="2" value="42" />
+          </div>
+          <div class="setting-control" data-custom-control>
+            <label for="speedInput">Velocidad <output class="setting-output" id="speedOutput">200 px/s</output></label>
+            <input id="speedInput" type="range" min="100" max="400" step="10" value="200" />
+          </div>
+          <div class="setting-control" data-custom-control>
+            <label for="spawnInput">Nuevo obstáculo cada <output class="setting-output" id="spawnOutput">15 s</output></label>
+            <input id="spawnInput" type="range" min="3" max="30" step="1" value="15" />
+          </div>
+          <div class="setting-control" data-custom-control>
+            <label for="totalInput">Cantidad de obstáculos <output class="setting-output" id="totalOutput">4</output></label>
+            <input id="totalInput" type="range" min="1" max="12" step="1" value="4" />
+          </div>
+          <div class="setting-control" data-custom-control>
+            <label for="targetTimeInput">Tiempo para alcanzarla <output class="setting-output" id="targetTimeOutput">12 s</output></label>
+            <input id="targetTimeInput" type="range" min="5" max="20" step="1" value="12" />
+          </div>
+          <div class="setting-control" data-custom-control>
+            <label for="durationInput">Duración</label>
+            <select id="durationInput">
+              <option value="60">1 minuto</option>
+              <option value="180">3 minutos</option>
+              <option value="300">5 minutos</option>
+              <option value="0">Sin límite</option>
+            </select>
+          </div>
+        </div>
+
+        <p class="config-note" id="configNote"><strong>Nivel Inicial:</strong> una práctica breve y tranquila para familiarizarse con el movimiento.</p>
+
+        <section class="visual-settings" aria-labelledby="visualQualityLabel">
+          <label class="section-heading" id="visualQualityLabel" for="visualQualityInput">Calidad visual</label>
+          <select id="visualQualityInput">
+            <option value="full" selected>Completa — Efectos y luces</option>
+            <option value="compatibility">Compatibilidad — Mejor rendimiento en PCs antiguas</option>
+          </select>
+        </section>
+
+        <section class="audio-settings" aria-labelledby="audioSettingsTitle">
+          <p class="section-heading" id="audioSettingsTitle">Audio</p>
+          <div class="audio-grid">
+            <div class="audio-control">
+              <label class="audio-toggle" for="soundEffectsToggle">
+                <input id="soundEffectsToggle" type="checkbox" checked />
+                <span>Efectos de sonido</span>
+              </label>
+              <div class="audio-volume" id="soundEffectsVolumeGroup">
+                <label for="soundEffectsVolume">Volumen de efectos <output id="soundEffectsVolumeOutput">70%</output></label>
+                <input id="soundEffectsVolume" type="range" min="0" max="100" step="5" value="70" />
+              </div>
+            </div>
+            <div class="audio-control">
+              <label class="audio-toggle" for="musicToggle">
+                <input id="musicToggle" type="checkbox" checked />
+                <span>Música</span>
+              </label>
+              <div class="audio-volume" id="musicVolumeGroup">
+                <label for="musicVolume">Volumen de música <output id="musicVolumeOutput">45%</output></label>
+                <input id="musicVolume" type="range" min="0" max="100" step="5" value="45" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="configuration-actions">
+          <button class="front-button secondary-button" id="saveSettingsButton" type="button">Aplicar y volver</button>
+          <button class="front-button" id="settingsPlayButton" type="button">Jugar con esta configuración</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main id="app" class="screen-hidden">
+    <aside class="hud" aria-label="Información de la partida">
+      <header>
+        <p class="brand-kicker">Práctica de mouse</p>
+        <h1>Esquivá</h1>
+        <p class="subtitle">Alcanzá la luz verde y evitá los obstáculos.</p>
+      </header>
+
+      <section class="status-card" aria-live="polite">
+        <div>
+          <span class="status-label">Tiempo restante</span>
+          <strong class="time-value" id="timeValue">1:00</strong>
+        </div>
+        <div class="guide-score">
+          <strong id="targetValue">0</strong>
+          <span>Metas</span>
+        </div>
+      </section>
+
+      <section class="stats">
+        <div class="stat">
+          <strong id="impactValue">0</strong>
+          <span>Impactos</span>
+        </div>
+        <div class="stat">
+          <strong id="obstacleValue">1</strong>
+          <span>Obstáculos</span>
+        </div>
+        <div class="stat">
+          <strong id="streakValue">0 s</strong>
+          <span>Mejor tramo</span>
+        </div>
+        <div class="stat">
+          <strong id="statusValue">Listo</strong>
+          <span>Estado</span>
+        </div>
+      </section>
+
+      <div class="legend" aria-label="Referencias visuales">
+        <div class="legend-row">
+          <span class="legend-dot player" aria-hidden="true"></span>
+          <span>Este círculo sos vos</span>
+        </div>
+        <div class="legend-row">
+          <span class="legend-dot obstacle" aria-hidden="true"></span>
+          <span>Evitá los círculos de colores</span>
+        </div>
+        <div class="legend-row">
+          <span class="legend-dot target" aria-hidden="true"></span>
+          <span>Alcanzá la luz verde</span>
+        </div>
+        <p class="tuning-note">Un clic para entrar · Escape para pausar y liberar el mouse.</p>
+      </div>
+    </aside>
+
+    <section class="play-shell" id="playShell" aria-label="Área de juego">
+      <canvas id="gameCanvas" aria-label="Juego de práctica para mover el mouse"></canvas>
+      <div class="target-feedback" id="targetFeedback" aria-hidden="true"></div>
+      <div class="overlay" id="overlay" aria-live="assertive">
+        <div class="message-card" id="messageCard">
+          <div class="message-icon" aria-hidden="true">✦</div>
+          <h2 class="message-title">Entrá al campo</h2>
+          <p class="message-text">Hacé un clic izquierdo para comenzar. Después solo tenés que mover el mouse.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    /* Ajustes generales que no cambian entre los niveles de dificultad. */
+    const GAME_CONFIG = Object.freeze({
+      SPAWN_FLASH_COUNT: 3,          // Cantidad de parpadeos antes de activarse.
+      SPAWN_FLASH_CYCLE_MS: 520,     // Duración de cada parpadeo completo.
+      OBSTACLE_COLLISION_ITERATIONS: 2,
+      IMPACT_PAUSE_MS: 900,          // Duración del cartel de impacto.
+      PROTECTION_MS: 1750,           // Protección total después de un impacto.
+      TARGET_RESPAWN_MS: 320,
+      TARGET_COVERED_RELOCATE_MS: 650,
+      TARGET_SAFE_CLEARANCE: 26,
+      TARGET_MIN_TRAVEL_RATIO: 0.32,
+      MAX_FRAME_SECONDS: 0.035,
+      PLAYER_COLOR: "#38e8ff",
+      TARGET_COLOR: "#57ee9a",
+      OBSTACLE_COLORS: ["#ff5576", "#ff9f43", "#ffda57", "#d96cff"]
+    });
+
+    const DIFFICULTY_PRESETS = Object.freeze({
+      initial: Object.freeze({
+        playerRadius: 50,
+        obstacleRadius: 60,
+        obstacleSpeed: 200,
+        spawnIntervalSeconds: 15,
+        totalObstacles: 4,
+        targetRadius: 42,
+        targetLifetimeSeconds: 12,
+        durationSeconds: 60
+      }),
+      medium: Object.freeze({
+        playerRadius: 52,
+        obstacleRadius: 64,
+        obstacleSpeed: 240,
+        spawnIntervalSeconds: 12,
+        totalObstacles: 8,
+        targetRadius: 38,
+        targetLifetimeSeconds: 9,
+        durationSeconds: 180
+      }),
+      advanced: Object.freeze({
+        playerRadius: 55,
+        obstacleRadius: 68,
+        obstacleSpeed: 290,
+        spawnIntervalSeconds: 8,
+        totalObstacles: 12,
+        targetRadius: 34,
+        targetLifetimeSeconds: 7,
+        durationSeconds: 300
+      })
+    });
+
+    const PRESET_DESCRIPTIONS = Object.freeze({
+      initial: "<strong>Nivel Inicial:</strong> una práctica breve y tranquila para familiarizarse con el movimiento.",
+      medium: "<strong>Nivel Medio:</strong> aparecen más obstáculos y se desplazan con mayor velocidad.",
+      advanced: "<strong>Nivel Avanzado:</strong> una partida larga, rápida y con el campo mucho más ocupado.",
+      custom: "<strong>Nivel Personalizado:</strong> estos valores quedan listos para que puedas ajustarlos libremente."
+    });
+
+    const menuScreen = document.getElementById("menuScreen");
+    const visualQualityInput = document.getElementById("visualQualityInput");
+    const targetFeedback = document.getElementById("targetFeedback");
+    const settingsScreen = document.getElementById("settingsScreen");
+    const app = document.getElementById("app");
+    const menuPlayButton = document.getElementById("menuPlayButton");
+    const openSettingsButton = document.getElementById("openSettingsButton");
+    const settingsBackButton = document.getElementById("settingsBackButton");
+    const saveSettingsButton = document.getElementById("saveSettingsButton");
+    const settingsPlayButton = document.getElementById("settingsPlayButton");
+    const presetButtons = [...document.querySelectorAll("[data-preset]")];
+    const customControlCards = [...document.querySelectorAll("[data-custom-control]")];
+    const configNote = document.getElementById("configNote");
+    const soundEffectsToggle = document.getElementById("soundEffectsToggle");
+    const soundEffectsVolume = document.getElementById("soundEffectsVolume");
+    const soundEffectsVolumeOutput = document.getElementById("soundEffectsVolumeOutput");
+    const soundEffectsVolumeGroup = document.getElementById("soundEffectsVolumeGroup");
+    const musicToggle = document.getElementById("musicToggle");
+    const musicVolume = document.getElementById("musicVolume");
+    const musicVolumeOutput = document.getElementById("musicVolumeOutput");
+    const musicVolumeGroup = document.getElementById("musicVolumeGroup");
+    const settingInputs = Object.freeze({
+      playerRadius: document.getElementById("playerSizeInput"),
+      obstacleRadius: document.getElementById("obstacleSizeInput"),
+      targetRadius: document.getElementById("targetSizeInput"),
+      obstacleSpeed: document.getElementById("speedInput"),
+      spawnIntervalSeconds: document.getElementById("spawnInput"),
+      totalObstacles: document.getElementById("totalInput"),
+      targetLifetimeSeconds: document.getElementById("targetTimeInput"),
+      durationSeconds: document.getElementById("durationInput")
+    });
+    const settingOutputs = Object.freeze({
+      playerRadius: document.getElementById("playerSizeOutput"),
+      obstacleRadius: document.getElementById("obstacleSizeOutput"),
+      targetRadius: document.getElementById("targetSizeOutput"),
+      obstacleSpeed: document.getElementById("speedOutput"),
+      spawnIntervalSeconds: document.getElementById("spawnOutput"),
+      totalObstacles: document.getElementById("totalOutput"),
+      targetLifetimeSeconds: document.getElementById("targetTimeOutput")
+    });
+
+    const canvas = document.getElementById("gameCanvas");
+    const context = canvas.getContext("2d");
+    const playShell = document.getElementById("playShell");
+    const overlay = document.getElementById("overlay");
+    const messageCard = document.getElementById("messageCard");
+    const timeValue = document.getElementById("timeValue");
+    const impactValue = document.getElementById("impactValue");
+    const targetValue = document.getElementById("targetValue");
+    const obstacleValue = document.getElementById("obstacleValue");
+    const streakValue = document.getElementById("streakValue");
+    const statusValue = document.getElementById("statusValue");
+
+    const PHASE = Object.freeze({
+      READY: "ready",
+      RUNNING: "running",
+      IMPACT: "impact",
+      PAUSED: "paused",
+      FINISHED: "finished"
+    });
+
+    // Perfiles de dibujo independientes de la dificultad y de la simulación.
+    const VISUAL_PROFILES = Object.freeze({
+      full: Object.freeze({
+        pixelRatio: () => Math.min(window.devicePixelRatio || 1, 2),
+        gradients: true,
+        circleGlow: 20,
+        targetRingGlow: 10
+      }),
+      compatibility: Object.freeze({
+        pixelRatio: () => 1,
+        gradients: false,
+        circleGlow: 0,
+        targetRingGlow: 0
+      })
+    });
+    let visualQuality = "full";
+    let visualProfile = VISUAL_PROFILES.full;
+    let targetFeedbackAnimation = null;
+
+    let selectedPreset = "initial";
+    let customSettings = { ...DIFFICULTY_PRESETS.initial };
+    let activeSettings = { ...DIFFICULTY_PRESETS.initial };
+    let spawnSchedule = [];
+    let audioSettings = {
+      soundEffectsEnabled: true,
+      soundEffectsVolume: 0.7,
+      musicEnabled: true,
+      musicVolume: 0.45
+    };
+    let audioContext = null;
+    const musicTrack = new Audio();
+    musicTrack.preload = "none";
+    musicTrack.loop = true;
+
+    const guideTarget = {
+      x: 0,
+      y: 0,
+      radius: activeSettings.targetRadius,
+      state: "waiting",
+      remainingMs: 0,
+      respawnRemainingMs: 0,
+      coveredMs: 0
+    };
+
+    const player = {
+      x: 0,
+      y: 0,
+      previousX: 0,
+      previousY: 0,
+      radius: activeSettings.playerRadius
+    };
+
+    let arenaWidth = 1;
+    let arenaHeight = 1;
+    let phase = PHASE.READY;
+    let phaseBeforePause = PHASE.RUNNING;
+    let pointerLockRequestPending = false;
+    let pointerLockAttemptId = 0;
+    let obstacles = [];
+    let nextObstacleIndex = 0;
+    let impacts = 0;
+    let targetsReached = 0;
+    let targetsMissed = 0;
+    let elapsedMs = 0;
+    let remainingMs = activeSettings.durationSeconds * 1000;
+    let impactPauseRemainingMs = 0;
+    let protectionRemainingMs = 0;
+    let currentStreakMs = 0;
+    let bestStreakMs = 0;
+    let lastFrameTimestamp = 0;
+
+    function clamp(value, minimum, maximum) {
+      return Math.min(Math.max(value, minimum), maximum);
+    }
+
+    function getSelectedSettings() {
+      const source = selectedPreset === "custom" ? customSettings : DIFFICULTY_PRESETS[selectedPreset];
+      return { ...source };
+    }
+
+    function updateSettingOutputs(settings) {
+      settingOutputs.playerRadius.textContent = `${settings.playerRadius} px`;
+      settingOutputs.obstacleRadius.textContent = `${settings.obstacleRadius} px`;
+      settingOutputs.targetRadius.textContent = `${settings.targetRadius} px`;
+      settingOutputs.obstacleSpeed.textContent = `${settings.obstacleSpeed} px/s`;
+      settingOutputs.spawnIntervalSeconds.textContent = `${settings.spawnIntervalSeconds} s`;
+      settingOutputs.totalObstacles.textContent = String(settings.totalObstacles);
+      settingOutputs.targetLifetimeSeconds.textContent = `${settings.targetLifetimeSeconds} s`;
+    }
+
+    function writeSettingsToControls(settings) {
+      settingInputs.playerRadius.value = String(settings.playerRadius);
+      settingInputs.obstacleRadius.value = String(settings.obstacleRadius);
+      settingInputs.targetRadius.value = String(settings.targetRadius);
+      settingInputs.obstacleSpeed.value = String(settings.obstacleSpeed);
+      settingInputs.spawnIntervalSeconds.value = String(settings.spawnIntervalSeconds);
+      settingInputs.totalObstacles.value = String(settings.totalObstacles);
+      settingInputs.targetLifetimeSeconds.value = String(settings.targetLifetimeSeconds);
+      settingInputs.durationSeconds.value = String(settings.durationSeconds ?? 0);
+      updateSettingOutputs(settings);
+    }
+
+    function readCustomSettings() {
+      return {
+        playerRadius: Number(settingInputs.playerRadius.value),
+        obstacleRadius: Number(settingInputs.obstacleRadius.value),
+        targetRadius: Number(settingInputs.targetRadius.value),
+        obstacleSpeed: Number(settingInputs.obstacleSpeed.value),
+        spawnIntervalSeconds: Number(settingInputs.spawnIntervalSeconds.value),
+        totalObstacles: Number(settingInputs.totalObstacles.value),
+        targetLifetimeSeconds: Number(settingInputs.targetLifetimeSeconds.value),
+        durationSeconds: Number(settingInputs.durationSeconds.value) || null
+      };
+    }
+
+    function updateAudioSettings() {
+      audioSettings = {
+        soundEffectsEnabled: soundEffectsToggle.checked,
+        soundEffectsVolume: Number(soundEffectsVolume.value) / 100,
+        musicEnabled: musicToggle.checked,
+        musicVolume: Number(musicVolume.value) / 100
+      };
+
+      soundEffectsVolume.disabled = !audioSettings.soundEffectsEnabled;
+      musicVolume.disabled = !audioSettings.musicEnabled;
+      soundEffectsVolumeGroup.classList.toggle("is-disabled", !audioSettings.soundEffectsEnabled);
+      musicVolumeGroup.classList.toggle("is-disabled", !audioSettings.musicEnabled);
+      soundEffectsVolumeOutput.textContent = `${soundEffectsVolume.value}%`;
+      musicVolumeOutput.textContent = `${musicVolume.value}%`;
+      musicTrack.volume = audioSettings.musicVolume;
+
+      if (!audioSettings.musicEnabled) {
+        pauseMusic();
+      }
+    }
+
+    function unlockAudioContext() {
+      if (!audioContext) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) {
+          return null;
+        }
+        audioContext = new AudioContextClass();
+      }
+
+      if (audioContext.state === "suspended") {
+        audioContext.resume().catch(() => {});
+      }
+      return audioContext;
+    }
+
+    function scheduleEffectTone({
+      startOffset,
+      duration,
+      startFrequency,
+      endFrequency,
+      type,
+      strength
+    }) {
+      const activeAudioContext = unlockAudioContext();
+      if (!activeAudioContext || !audioSettings.soundEffectsEnabled || audioSettings.soundEffectsVolume <= 0) {
+        return;
+      }
+
+      const startTime = activeAudioContext.currentTime + startOffset;
+      const oscillator = activeAudioContext.createOscillator();
+      const gain = activeAudioContext.createGain();
+      oscillator.type = type;
+      oscillator.frequency.setValueAtTime(startFrequency, startTime);
+      oscillator.frequency.exponentialRampToValueAtTime(endFrequency, startTime + duration);
+      gain.gain.setValueAtTime(0.0001, startTime);
+      gain.gain.exponentialRampToValueAtTime(
+        Math.max(0.0001, strength * audioSettings.soundEffectsVolume),
+        startTime + 0.018
+      );
+      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+      oscillator.connect(gain);
+      gain.connect(activeAudioContext.destination);
+      oscillator.start(startTime);
+      oscillator.stop(startTime + duration + 0.02);
+    }
+
+    function playApprovalSound() {
+      scheduleEffectTone({
+        startOffset: 0,
+        duration: 0.13,
+        startFrequency: 560,
+        endFrequency: 720,
+        type: "sine",
+        strength: 0.16
+      });
+      scheduleEffectTone({
+        startOffset: 0.1,
+        duration: 0.18,
+        startFrequency: 760,
+        endFrequency: 1020,
+        type: "sine",
+        strength: 0.14
+      });
+    }
+
+    function playImpactSound() {
+      scheduleEffectTone({
+        startOffset: 0,
+        duration: 0.28,
+        startFrequency: 230,
+        endFrequency: 105,
+        type: "triangle",
+        strength: 0.2
+      });
+      scheduleEffectTone({
+        startOffset: 0.055,
+        duration: 0.2,
+        startFrequency: 165,
+        endFrequency: 82,
+        type: "sawtooth",
+        strength: 0.065
+      });
+    }
+
+    function startMusic(restartFromBeginning = false) {
+      if (!audioSettings.musicEnabled || audioSettings.musicVolume <= 0) {
+        return;
+      }
+
+      if (!musicTrack.getAttribute("src")) {
+        musicTrack.src = "music.mp3";
+      }
+      musicTrack.volume = audioSettings.musicVolume;
+      if (restartFromBeginning) {
+        try {
+          musicTrack.currentTime = 0;
+        } catch (error) {
+          // El archivo todavía puede no estar disponible; se intentará al reproducir.
+        }
+      }
+      const playRequest = musicTrack.play();
+      if (playRequest && typeof playRequest.catch === "function") {
+        playRequest.catch(() => {});
+      }
+    }
+
+    function pauseMusic() {
+      musicTrack.pause();
+    }
+
+    function stopMusic() {
+      musicTrack.pause();
+      try {
+        musicTrack.currentTime = 0;
+      } catch (error) {
+        // No hay posición que reiniciar mientras music.mp3 todavía no existe.
+      }
+    }
+
+    function selectPreset(presetName) {
+      selectedPreset = presetName;
+      const isCustom = presetName === "custom";
+      const settings = getSelectedSettings();
+
+      for (const button of presetButtons) {
+        const isSelected = button.dataset.preset === presetName;
+        button.classList.toggle("is-selected", isSelected);
+        button.setAttribute("aria-pressed", String(isSelected));
+      }
+
+      for (const input of Object.values(settingInputs)) {
+        input.disabled = !isCustom;
+      }
+      for (const card of customControlCards) {
+        card.classList.toggle("is-disabled", !isCustom);
+      }
+
+      writeSettingsToControls(settings);
+      configNote.innerHTML = PRESET_DESCRIPTIONS[presetName];
+    }
+
+    function applySelectedConfiguration() {
+      activeSettings = getSelectedSettings();
+    }
+
+    function showMenuScreen() {
+      app.classList.add("screen-hidden");
+      settingsScreen.classList.add("screen-hidden");
+      menuScreen.classList.remove("screen-hidden");
+    }
+
+    function showSettingsScreen() {
+      menuScreen.classList.add("screen-hidden");
+      app.classList.add("screen-hidden");
+      settingsScreen.classList.remove("screen-hidden");
+      selectPreset(selectedPreset);
+    }
+
+    function leaveGameForMenu() {
+      stopMusic();
+      pointerLockRequestPending = false;
+      pointerLockAttemptId += 1;
+      phase = PHASE.READY;
+      if (document.pointerLockElement === playShell) {
+        document.exitPointerLock();
+      }
+      showMenuScreen();
+    }
+
+    function startConfiguredGame() {
+      visualQuality = visualQualityInput.value;
+      visualProfile = VISUAL_PROFILES[visualQuality];
+      menuScreen.classList.add("screen-hidden");
+      settingsScreen.classList.add("screen-hidden");
+      app.classList.remove("screen-hidden");
+      window.requestAnimationFrame(() => {
+        resizeCanvas();
+        resetGame();
+      });
+    }
+
+    function formatTime(milliseconds) {
+      if (!Number.isFinite(milliseconds)) {
+        return "∞";
+      }
+      const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = String(totalSeconds % 60).padStart(2, "0");
+      return `${minutes}:${seconds}`;
+    }
+
+    function formatDuration(seconds) {
+      if (seconds === null) {
+        return "sin límite de tiempo";
+      }
+      if (seconds === 60) {
+        return "un minuto";
+      }
+      return `${seconds / 60} minutos`;
+    }
+
+    function formatSeconds(milliseconds) {
+      return `${Math.floor(Math.max(0, milliseconds) / 1000)} s`;
+    }
+
+    function setStatus(text) {
+      statusValue.textContent = text;
+    }
+
+    function updateHud() {
+      timeValue.textContent = formatTime(remainingMs);
+      impactValue.textContent = String(impacts);
+      targetValue.textContent = String(targetsReached);
+      obstacleValue.textContent = String(countActiveObstacles());
+      streakValue.textContent = formatSeconds(bestStreakMs);
+    }
+
+    function countActiveObstacles() {
+      return obstacles.filter((obstacle) => obstacle.state === "active").length;
+    }
+
+    function showReadyMessage() {
+      overlay.className = "overlay";
+      messageCard.innerHTML = `
+        <div class="message-icon" aria-hidden="true">✦</div>
+        <h2 class="message-title">Entrá al campo</h2>
+        <p class="message-text">Hacé un clic izquierdo para comenzar. Movete hacia la luz verde sin tocar los obstáculos.</p>
+      `;
+    }
+
+    function showImpactMessage() {
+      overlay.className = "overlay";
+      messageCard.innerHTML = '<div class="impact-message">¡IMPACTO!</div>';
+    }
+
+    function showPausedMessage() {
+      overlay.className = "overlay is-interactive";
+      messageCard.innerHTML = `
+        <div class="message-icon" aria-hidden="true">Ⅱ</div>
+        <h2 class="message-title">Juego pausado</h2>
+        <p class="message-text">El mouse está libre. Podés continuar o volver al menú principal.</p>
+        <div class="message-actions">
+          <button id="continueButton" type="button">Continuar</button>
+          <button class="secondary-button" id="pauseMenuButton" type="button">Volver al menú</button>
+        </div>
+      `;
+
+      const continueButton = document.getElementById("continueButton");
+      const pauseMenuButton = document.getElementById("pauseMenuButton");
+      for (const button of [continueButton, pauseMenuButton]) {
+        button.addEventListener("pointermove", (event) => event.stopPropagation());
+      }
+      continueButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        requestGamePointerLock();
+      });
+      pauseMenuButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        leaveGameForMenu();
+      });
+    }
+
+    function showFinishedMessage() {
+      const finalStreak = Math.max(bestStreakMs, currentStreakMs);
+      overlay.className = "overlay is-interactive";
+      messageCard.innerHTML = `
+        <div class="message-icon" aria-hidden="true">✓</div>
+        <h2 class="message-title">¡Práctica terminada!</h2>
+        <p class="message-text">Completaste ${formatDuration(activeSettings.durationSeconds)} de movimiento y precisión.</p>
+        <div class="results">
+          <div class="result-box"><strong>${impacts}</strong><span>Impactos</span></div>
+          <div class="result-box"><strong>${targetsReached}</strong><span>Objetivos alcanzados</span></div>
+          <div class="result-box"><strong>${targetsMissed}</strong><span>Objetivos vencidos</span></div>
+          <div class="result-box"><strong>${formatSeconds(finalStreak)}</strong><span>Mejor tramo</span></div>
+        </div>
+        <div class="message-actions">
+          <button id="restartButton" type="button">Volver a probar</button>
+          <button class="secondary-button" id="finishedMenuButton" type="button">Menú principal</button>
+        </div>
+      `;
+
+      const restartButton = document.getElementById("restartButton");
+      const finishedMenuButton = document.getElementById("finishedMenuButton");
+      for (const button of [restartButton, finishedMenuButton]) {
+        button.addEventListener("pointermove", (event) => event.stopPropagation());
+      }
+      restartButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        resetGame();
+      });
+      finishedMenuButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        leaveGameForMenu();
+      });
+    }
+
+    function hideOverlay() {
+      overlay.className = "overlay is-hidden";
+    }
+
+    function resizeCanvas() {
+      const rectangle = playShell.getBoundingClientRect();
+      arenaWidth = Math.max(1, rectangle.width);
+      arenaHeight = Math.max(1, rectangle.height);
+      const pixelRatio = visualProfile.pixelRatio();
+
+      canvas.width = Math.round(arenaWidth * pixelRatio);
+      canvas.height = Math.round(arenaHeight * pixelRatio);
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+
+      player.x = clamp(player.x || arenaWidth / 2, player.radius, arenaWidth - player.radius);
+      player.y = clamp(player.y || arenaHeight / 2, player.radius, arenaHeight - player.radius);
+      player.previousX = player.x;
+      player.previousY = player.y;
+
+      for (const obstacle of obstacles) {
+        obstacle.x = clamp(obstacle.x, obstacle.radius, arenaWidth - obstacle.radius);
+        obstacle.y = clamp(obstacle.y, obstacle.radius, arenaHeight - obstacle.radius);
+      }
+
+      if (guideTarget.state === "active") {
+        guideTarget.x = clamp(guideTarget.x, guideTarget.radius, arenaWidth - guideTarget.radius);
+        guideTarget.y = clamp(guideTarget.y, guideTarget.radius, arenaHeight - guideTarget.radius);
+        if (!isGuidePositionSafe(guideTarget.x, guideTarget.y, false)) {
+          placeGuideTarget();
+        }
+      }
+    }
+
+    function createObstacle(index) {
+      const positions = [
+        [0.72, 0.26],
+        [0.31, 0.72],
+        [0.78, 0.76],
+        [0.27, 0.28],
+        [0.52, 0.18],
+        [0.52, 0.82]
+      ];
+      const angles = [2.45, -0.65, -2.35, 0.72, 2.1, -1.05];
+      const position = positions[index % positions.length];
+      const angle = angles[index % angles.length];
+      const radius = activeSettings.obstacleRadius;
+
+      return {
+        x: clamp(arenaWidth * position[0], radius, arenaWidth - radius),
+        y: clamp(arenaHeight * position[1], radius, arenaHeight - radius),
+        radius,
+        velocityX: Math.cos(angle) * activeSettings.obstacleSpeed,
+        velocityY: Math.sin(angle) * activeSettings.obstacleSpeed,
+        color: GAME_CONFIG.OBSTACLE_COLORS[index % GAME_CONFIG.OBSTACLE_COLORS.length],
+        state: "warning",
+        warningElapsedMs: 0
+      };
+    }
+
+    function addWarningObstacle() {
+      obstacles.push(createObstacle(nextObstacleIndex));
+      nextObstacleIndex += 1;
+      if (
+        guideTarget.state === "active" &&
+        !isGuidePositionSafe(guideTarget.x, guideTarget.y, false)
+      ) {
+        placeGuideTarget();
+      }
+      updateHud();
+    }
+
+    function prepareObstacles() {
+      obstacles = [];
+      nextObstacleIndex = 0;
+      addWarningObstacle();
+    }
+
+    function isGuidePositionSafe(x, y, requireTravelDistance = true) {
+      const edgeMargin = guideTarget.radius + 18;
+      if (
+        x < edgeMargin ||
+        x > arenaWidth - edgeMargin ||
+        y < edgeMargin ||
+        y > arenaHeight - edgeMargin
+      ) {
+        return false;
+      }
+
+      const playerDistance = Math.hypot(x - player.x, y - player.y);
+      const minimumTravelDistance = Math.max(
+        player.radius + guideTarget.radius + GAME_CONFIG.TARGET_SAFE_CLEARANCE,
+        Math.min(arenaWidth, arenaHeight) * GAME_CONFIG.TARGET_MIN_TRAVEL_RATIO
+      );
+      if (requireTravelDistance && playerDistance < minimumTravelDistance) {
+        return false;
+      }
+
+      return obstacles.every((obstacle) => {
+        const minimumDistance =
+          obstacle.radius + guideTarget.radius + GAME_CONFIG.TARGET_SAFE_CLEARANCE;
+        return Math.hypot(x - obstacle.x, y - obstacle.y) >= minimumDistance;
+      });
+    }
+
+    function guidePositionClearance(x, y) {
+      let clearance = Math.hypot(x - player.x, y - player.y) - player.radius - guideTarget.radius;
+      for (const obstacle of obstacles) {
+        clearance = Math.min(
+          clearance,
+          Math.hypot(x - obstacle.x, y - obstacle.y) - obstacle.radius - guideTarget.radius
+        );
+      }
+      return clearance;
+    }
+
+    function placeGuideTarget() {
+      guideTarget.radius = activeSettings.targetRadius;
+      const edgeMargin = guideTarget.radius + 18;
+      const minimumX = edgeMargin;
+      const maximumX = Math.max(minimumX, arenaWidth - edgeMargin);
+      const minimumY = edgeMargin;
+      const maximumY = Math.max(minimumY, arenaHeight - edgeMargin);
+
+      for (let attempt = 0; attempt < 100; attempt += 1) {
+        const candidateX = minimumX + Math.random() * (maximumX - minimumX);
+        const candidateY = minimumY + Math.random() * (maximumY - minimumY);
+        if (isGuidePositionSafe(candidateX, candidateY, true)) {
+          guideTarget.x = candidateX;
+          guideTarget.y = candidateY;
+          guideTarget.state = "active";
+          guideTarget.remainingMs = activeSettings.targetLifetimeSeconds * 1000;
+          guideTarget.respawnRemainingMs = 0;
+          guideTarget.coveredMs = 0;
+          return;
+        }
+      }
+
+      let bestCandidate = { x: minimumX, y: minimumY, clearance: Number.NEGATIVE_INFINITY };
+      const columns = 10;
+      const rows = 6;
+      for (let row = 0; row < rows; row += 1) {
+        for (let column = 0; column < columns; column += 1) {
+          const candidateX = minimumX + (column / (columns - 1)) * (maximumX - minimumX);
+          const candidateY = minimumY + (row / (rows - 1)) * (maximumY - minimumY);
+          const clearance = guidePositionClearance(candidateX, candidateY);
+          if (clearance > bestCandidate.clearance) {
+            bestCandidate = { x: candidateX, y: candidateY, clearance };
+          }
+        }
+      }
+
+      guideTarget.x = bestCandidate.x;
+      guideTarget.y = bestCandidate.y;
+      guideTarget.state = "active";
+      guideTarget.remainingMs = activeSettings.targetLifetimeSeconds * 1000;
+      guideTarget.respawnRemainingMs = 0;
+      guideTarget.coveredMs = 0;
+    }
+
+    function flashGuideTarget() {
+      if (visualQuality === "compatibility") {
+        // Reiniciar solo opacity, sin leer medidas ni forzar layout.
+        targetFeedbackAnimation?.cancel();
+        targetFeedbackAnimation = targetFeedback.animate([
+          { opacity: 0, offset: 0 },
+          { opacity: 1, offset: 0.45 },
+          { opacity: 0, offset: 1 }
+        ], { duration: 360, easing: "ease-out" });
+        return;
+      }
+
+      playShell.classList.remove("is-target-collected");
+      void playShell.offsetWidth;
+      playShell.classList.add("is-target-collected");
+    }
+
+    function scheduleGuideRespawn(wasMissed) {
+      if (wasMissed) {
+        targetsMissed += 1;
+      } else {
+        targetsReached += 1;
+        playApprovalSound();
+        flashGuideTarget();
+      }
+
+      guideTarget.state = "waiting";
+      guideTarget.remainingMs = 0;
+      guideTarget.respawnRemainingMs = GAME_CONFIG.TARGET_RESPAWN_MS;
+      guideTarget.coveredMs = 0;
+      updateHud();
+    }
+
+    function checkGuideTargetContact() {
+      if (phase !== PHASE.RUNNING || guideTarget.state !== "active") {
+        return;
+      }
+
+      const combinedRadius = player.radius + guideTarget.radius;
+      const distanceSquared = segmentDistanceSquared(
+        guideTarget.x,
+        guideTarget.y,
+        player.previousX,
+        player.previousY,
+        player.x,
+        player.y
+      );
+      if (distanceSquared <= combinedRadius * combinedRadius) {
+        scheduleGuideRespawn(false);
+      }
+    }
+
+    function updateGuideTarget(deltaMs) {
+      if (guideTarget.state === "waiting") {
+        guideTarget.respawnRemainingMs -= deltaMs;
+        if (guideTarget.respawnRemainingMs <= 0) {
+          placeGuideTarget();
+        }
+        return;
+      }
+
+      guideTarget.remainingMs -= deltaMs;
+      if (guideTarget.remainingMs <= 0) {
+        scheduleGuideRespawn(true);
+        return;
+      }
+
+      const isCovered = obstacles.some((obstacle) => {
+        if (obstacle.state !== "active") {
+          return false;
+        }
+        return Math.hypot(guideTarget.x - obstacle.x, guideTarget.y - obstacle.y) <
+          guideTarget.radius + obstacle.radius;
+      });
+      guideTarget.coveredMs = isCovered ? guideTarget.coveredMs + deltaMs : 0;
+      if (guideTarget.coveredMs >= GAME_CONFIG.TARGET_COVERED_RELOCATE_MS) {
+        placeGuideTarget();
+      }
+    }
+
+    function resetGame() {
+      stopMusic();
+      phase = PHASE.READY;
+      phaseBeforePause = PHASE.RUNNING;
+      pointerLockRequestPending = false;
+      pointerLockAttemptId += 1;
+      impacts = 0;
+      targetsReached = 0;
+      targetsMissed = 0;
+      elapsedMs = 0;
+      remainingMs = activeSettings.durationSeconds === null
+        ? Number.POSITIVE_INFINITY
+        : activeSettings.durationSeconds * 1000;
+      spawnSchedule = Array.from(
+        { length: activeSettings.totalObstacles },
+        (_, index) => index * activeSettings.spawnIntervalSeconds
+      );
+      impactPauseRemainingMs = 0;
+      protectionRemainingMs = 0;
+      currentStreakMs = 0;
+      bestStreakMs = 0;
+      player.radius = activeSettings.playerRadius;
+      player.x = arenaWidth / 2;
+      player.y = arenaHeight / 2;
+      player.previousX = player.x;
+      player.previousY = player.y;
+      prepareObstacles();
+      guideTarget.state = "waiting";
+      guideTarget.radius = activeSettings.targetRadius;
+      placeGuideTarget();
+      playShell.classList.remove("is-impact");
+      playShell.classList.remove("is-target-collected");
+      targetFeedbackAnimation?.cancel();
+      targetFeedbackAnimation = null;
+      setStatus("Listo");
+      updateHud();
+      showReadyMessage();
+    }
+
+    function startGame() {
+      phase = PHASE.RUNNING;
+      currentStreakMs = 0;
+      setStatus("Jugando");
+      hideOverlay();
+      startMusic(true);
+    }
+
+    function finishGame() {
+      bestStreakMs = Math.max(bestStreakMs, currentStreakMs);
+      remainingMs = 0;
+      phase = PHASE.FINISHED;
+      stopMusic();
+      setStatus("Finalizado");
+      updateHud();
+      showFinishedMessage();
+      if (document.pointerLockElement === playShell) {
+        document.exitPointerLock();
+      }
+    }
+
+    function registerImpact() {
+      if (phase !== PHASE.RUNNING || protectionRemainingMs > 0) {
+        return;
+      }
+
+      impacts += 1;
+      playImpactSound();
+      bestStreakMs = Math.max(bestStreakMs, currentStreakMs);
+      currentStreakMs = 0;
+      phase = PHASE.IMPACT;
+      impactPauseRemainingMs = GAME_CONFIG.IMPACT_PAUSE_MS;
+      protectionRemainingMs = GAME_CONFIG.PROTECTION_MS;
+      setStatus("Impacto");
+      updateHud();
+      showImpactMessage();
+
+      playShell.classList.remove("is-impact");
+      void playShell.offsetWidth;
+      playShell.classList.add("is-impact");
+    }
+
+    function resumeAfterImpact() {
+      phase = PHASE.RUNNING;
+      playShell.classList.remove("is-impact");
+      setStatus("Protegido");
+      hideOverlay();
+    }
+
+    function segmentDistanceSquared(px, py, ax, ay, bx, by) {
+      const abX = bx - ax;
+      const abY = by - ay;
+      const lengthSquared = abX * abX + abY * abY;
+
+      if (lengthSquared === 0) {
+        const dx = px - ax;
+        const dy = py - ay;
+        return dx * dx + dy * dy;
+      }
+
+      const projection = clamp(((px - ax) * abX + (py - ay) * abY) / lengthSquared, 0, 1);
+      const closestX = ax + projection * abX;
+      const closestY = ay + projection * abY;
+      const dx = px - closestX;
+      const dy = py - closestY;
+      return dx * dx + dy * dy;
+    }
+
+    function checkPlayerPathCollision() {
+      if (phase !== PHASE.RUNNING || protectionRemainingMs > 0) {
+        return;
+      }
+
+      for (const obstacle of obstacles) {
+        if (obstacle.state !== "active") {
+          continue;
+        }
+        const combinedRadius = player.radius + obstacle.radius;
+        const distanceSquared = segmentDistanceSquared(
+          obstacle.x,
+          obstacle.y,
+          player.previousX,
+          player.previousY,
+          player.x,
+          player.y
+        );
+
+        if (distanceSquared <= combinedRadius * combinedRadius) {
+          registerImpact();
+          return;
+        }
+      }
+    }
+
+    function movePlayerFromLockedPointer(event) {
+      if (document.pointerLockElement !== playShell || phase === PHASE.FINISHED || phase === PHASE.PAUSED) {
+        return;
+      }
+
+      player.previousX = player.x;
+      player.previousY = player.y;
+      player.x = clamp(player.x + event.movementX, player.radius, arenaWidth - player.radius);
+      player.y = clamp(player.y + event.movementY, player.radius, arenaHeight - player.radius);
+
+      checkPlayerPathCollision();
+      checkGuideTargetContact();
+    }
+
+    function requestGamePointerLock() {
+      if (phase === PHASE.FINISHED || document.pointerLockElement === playShell || pointerLockRequestPending) {
+        return;
+      }
+
+      unlockAudioContext();
+      startMusic(phase === PHASE.READY);
+      pointerLockRequestPending = true;
+      const attemptId = ++pointerLockAttemptId;
+      try {
+        const lockRequest = playShell.requestPointerLock();
+        if (lockRequest && typeof lockRequest.catch === "function") {
+          lockRequest.catch(() => handlePointerLockRequestFailure(attemptId));
+        }
+      } catch (error) {
+        handlePointerLockRequestFailure(attemptId);
+      }
+    }
+
+    function handlePointerLockRequestFailure(attemptId) {
+      if (
+        attemptId !== pointerLockAttemptId ||
+        document.pointerLockElement === playShell ||
+        !pointerLockRequestPending
+      ) {
+        return;
+      }
+
+      pointerLockRequestPending = false;
+      pauseMusic();
+      if (phase === PHASE.READY) {
+        setStatus("Listo");
+        showReadyMessage();
+      } else {
+        setStatus("En pausa");
+        showPausedMessage();
+      }
+    }
+
+    function pauseForPointerRelease() {
+      if (phase !== PHASE.RUNNING && phase !== PHASE.IMPACT) {
+        return;
+      }
+
+      phaseBeforePause = phase;
+      phase = PHASE.PAUSED;
+      pauseMusic();
+      setStatus("En pausa");
+      showPausedMessage();
+    }
+
+    function resumeFromPointerLock() {
+      if (phase === PHASE.READY) {
+        startGame();
+        return;
+      }
+
+      if (phase !== PHASE.PAUSED) {
+        return;
+      }
+
+      phase = phaseBeforePause;
+      startMusic(false);
+      if (phase === PHASE.IMPACT) {
+        setStatus("Impacto");
+        showImpactMessage();
+      } else {
+        setStatus(protectionRemainingMs > 0 ? "Protegido" : "Jugando");
+        hideOverlay();
+      }
+    }
+
+    function handlePointerLockChange() {
+      if (document.pointerLockElement === playShell) {
+        pointerLockRequestPending = false;
+        pointerLockAttemptId += 1;
+        playShell.classList.add("is-pointer-locked");
+        resumeFromPointerLock();
+        return;
+      }
+
+      playShell.classList.remove("is-pointer-locked");
+      if (pointerLockRequestPending) {
+        return;
+      }
+      pauseForPointerRelease();
+    }
+
+    function isActivationPositionFree(obstacle, x, y) {
+      const clearance = 2;
+
+      return obstacles.every((other) => {
+        if (other === obstacle || other.state !== "active") {
+          return true;
+        }
+
+        const deltaX = x - other.x;
+        const deltaY = y - other.y;
+        const minimumDistance = obstacle.radius + other.radius + clearance;
+        return deltaX * deltaX + deltaY * deltaY >= minimumDistance * minimumDistance;
+      });
+    }
+
+    function placeObstacleForActivation(obstacle, obstacleIndex) {
+      if (isActivationPositionFree(obstacle, obstacle.x, obstacle.y)) {
+        return;
+      }
+
+      const originX = obstacle.x;
+      const originY = obstacle.y;
+      const sampleCount = 32;
+      const distanceStep = Math.max(12, obstacle.radius * 0.35);
+      const maximumDistance = Math.hypot(arenaWidth, arenaHeight);
+      const startingAngle = (obstacleIndex * 2.399963229728653) % (Math.PI * 2);
+
+      for (let distance = distanceStep; distance <= maximumDistance; distance += distanceStep) {
+        for (let sample = 0; sample < sampleCount; sample += 1) {
+          const angle = startingAngle + (sample / sampleCount) * Math.PI * 2;
+          const candidateX = originX + Math.cos(angle) * distance;
+          const candidateY = originY + Math.sin(angle) * distance;
+
+          if (
+            candidateX < obstacle.radius ||
+            candidateX > arenaWidth - obstacle.radius ||
+            candidateY < obstacle.radius ||
+            candidateY > arenaHeight - obstacle.radius
+          ) {
+            continue;
+          }
+
+          if (isActivationPositionFree(obstacle, candidateX, candidateY)) {
+            obstacle.x = candidateX;
+            obstacle.y = candidateY;
+            return;
+          }
+        }
+      }
+    }
+
+    function enforceObstacleSpeed(obstacle, obstacleIndex) {
+      const currentSpeed = Math.hypot(obstacle.velocityX, obstacle.velocityY);
+
+      if (currentSpeed > 0.0001) {
+        const speedScale = activeSettings.obstacleSpeed / currentSpeed;
+        obstacle.velocityX *= speedScale;
+        obstacle.velocityY *= speedScale;
+        return;
+      }
+
+      const fallbackAngle = (obstacleIndex * 2.399963229728653) % (Math.PI * 2);
+      obstacle.velocityX = Math.cos(fallbackAngle) * activeSettings.obstacleSpeed;
+      obstacle.velocityY = Math.sin(fallbackAngle) * activeSettings.obstacleSpeed;
+    }
+
+    function updateObstacle(obstacle, deltaSeconds, deltaMs, obstacleIndex) {
+      if (obstacle.state === "warning") {
+        obstacle.warningElapsedMs += deltaMs;
+        const warningDuration = GAME_CONFIG.SPAWN_FLASH_COUNT * GAME_CONFIG.SPAWN_FLASH_CYCLE_MS;
+        if (obstacle.warningElapsedMs >= warningDuration) {
+          placeObstacleForActivation(obstacle, obstacleIndex);
+          obstacle.state = "active";
+          obstacle.warningElapsedMs = warningDuration;
+          enforceObstacleSpeed(obstacle, obstacleIndex);
+          updateHud();
+        }
+        return;
+      }
+
+      obstacle.x += obstacle.velocityX * deltaSeconds;
+      obstacle.y += obstacle.velocityY * deltaSeconds;
+
+      const minX = obstacle.radius;
+      const maxX = Math.max(minX, arenaWidth - obstacle.radius);
+      const minY = obstacle.radius;
+      const maxY = Math.max(minY, arenaHeight - obstacle.radius);
+
+      if (obstacle.x <= minX || obstacle.x >= maxX) {
+        obstacle.x = clamp(obstacle.x, minX, maxX);
+        obstacle.velocityX *= -1;
+      }
+
+      if (obstacle.y <= minY || obstacle.y >= maxY) {
+        obstacle.y = clamp(obstacle.y, minY, maxY);
+        obstacle.velocityY *= -1;
+      }
+    }
+
+    function keepObstacleInsideArena(obstacle) {
+      const minX = obstacle.radius;
+      const maxX = Math.max(minX, arenaWidth - obstacle.radius);
+      const minY = obstacle.radius;
+      const maxY = Math.max(minY, arenaHeight - obstacle.radius);
+
+      obstacle.x = clamp(obstacle.x, minX, maxX);
+      obstacle.y = clamp(obstacle.y, minY, maxY);
+
+      if (obstacle.x === minX && obstacle.velocityX < 0) obstacle.velocityX *= -1;
+      if (obstacle.x === maxX && obstacle.velocityX > 0) obstacle.velocityX *= -1;
+      if (obstacle.y === minY && obstacle.velocityY < 0) obstacle.velocityY *= -1;
+      if (obstacle.y === maxY && obstacle.velocityY > 0) obstacle.velocityY *= -1;
+    }
+
+    function resolveObstaclePairCollision(first, second, firstIndex, secondIndex) {
+      if (first.state !== "active" || second.state !== "active") {
+        return false;
+      }
+
+      const deltaX = second.x - first.x;
+      const deltaY = second.y - first.y;
+      const minimumDistance = first.radius + second.radius;
+      const distanceSquared = deltaX * deltaX + deltaY * deltaY;
+
+      if (distanceSquared >= minimumDistance * minimumDistance) {
+        return false;
+      }
+
+      const distance = Math.sqrt(distanceSquared);
+      const normalX = distance > 0 ? deltaX / distance : (firstIndex + secondIndex) % 2 === 0 ? 1 : 0;
+      const normalY = distance > 0 ? deltaY / distance : normalX === 0 ? 1 : 0;
+      const overlap = minimumDistance - distance;
+      const firstMass = first.radius * first.radius;
+      const secondMass = second.radius * second.radius;
+      const totalMass = firstMass + secondMass;
+
+      first.x -= normalX * overlap * (secondMass / totalMass);
+      first.y -= normalY * overlap * (secondMass / totalMass);
+      second.x += normalX * overlap * (firstMass / totalMass);
+      second.y += normalY * overlap * (firstMass / totalMass);
+
+      const relativeNormalSpeed =
+        (first.velocityX - second.velocityX) * normalX +
+        (first.velocityY - second.velocityY) * normalY;
+
+      if (relativeNormalSpeed > 0) {
+        const impulse = (2 * relativeNormalSpeed) / totalMass;
+        first.velocityX -= impulse * secondMass * normalX;
+        first.velocityY -= impulse * secondMass * normalY;
+        second.velocityX += impulse * firstMass * normalX;
+        second.velocityY += impulse * firstMass * normalY;
+      }
+
+      enforceObstacleSpeed(first, firstIndex);
+      enforceObstacleSpeed(second, secondIndex);
+
+      keepObstacleInsideArena(first);
+      keepObstacleInsideArena(second);
+      return true;
+    }
+
+    function resolveObstacleCollisions() {
+      for (let iteration = 0; iteration < GAME_CONFIG.OBSTACLE_COLLISION_ITERATIONS; iteration += 1) {
+        let collisionFound = false;
+
+        for (let firstIndex = 0; firstIndex < obstacles.length - 1; firstIndex += 1) {
+          for (let secondIndex = firstIndex + 1; secondIndex < obstacles.length; secondIndex += 1) {
+            collisionFound = resolveObstaclePairCollision(
+              obstacles[firstIndex],
+              obstacles[secondIndex],
+              firstIndex,
+              secondIndex
+            ) || collisionFound;
+          }
+        }
+
+        if (!collisionFound) {
+          break;
+        }
+      }
+    }
+
+    function addScheduledObstacles() {
+      const elapsedSeconds = elapsedMs / 1000;
+      while (
+        nextObstacleIndex < spawnSchedule.length &&
+        elapsedSeconds >= spawnSchedule[nextObstacleIndex]
+      ) {
+        addWarningObstacle();
+      }
+    }
+
+    function checkCurrentCollision() {
+      if (phase !== PHASE.RUNNING || protectionRemainingMs > 0) {
+        return;
+      }
+
+      for (const obstacle of obstacles) {
+        if (obstacle.state !== "active") {
+          continue;
+        }
+        const dx = player.x - obstacle.x;
+        const dy = player.y - obstacle.y;
+        const combinedRadius = player.radius + obstacle.radius;
+        if (dx * dx + dy * dy <= combinedRadius * combinedRadius) {
+          registerImpact();
+          return;
+        }
+      }
+    }
+
+    function updateGame(deltaMs) {
+      if (
+        document.pointerLockElement !== playShell ||
+        phase === PHASE.READY ||
+        phase === PHASE.PAUSED ||
+        phase === PHASE.FINISHED
+      ) {
+        return;
+      }
+
+      elapsedMs += deltaMs;
+      if (Number.isFinite(remainingMs)) {
+        remainingMs = Math.max(0, remainingMs - deltaMs);
+      }
+      if (Number.isFinite(remainingMs) && remainingMs <= 0) {
+        finishGame();
+        return;
+      }
+
+      protectionRemainingMs = Math.max(0, protectionRemainingMs - deltaMs);
+
+      if (phase === PHASE.IMPACT) {
+        impactPauseRemainingMs -= deltaMs;
+        if (impactPauseRemainingMs <= 0) {
+          resumeAfterImpact();
+        }
+        updateHud();
+        return;
+      }
+
+      if (phase !== PHASE.RUNNING) {
+        return;
+      }
+
+      currentStreakMs += deltaMs;
+      bestStreakMs = Math.max(bestStreakMs, currentStreakMs);
+
+      const deltaSeconds = Math.min(deltaMs / 1000, GAME_CONFIG.MAX_FRAME_SECONDS);
+      for (let obstacleIndex = 0; obstacleIndex < obstacles.length; obstacleIndex += 1) {
+        updateObstacle(obstacles[obstacleIndex], deltaSeconds, deltaMs, obstacleIndex);
+      }
+
+      resolveObstacleCollisions();
+      addScheduledObstacles();
+      updateGuideTarget(deltaMs);
+      checkCurrentCollision();
+
+      if (protectionRemainingMs > 0 && phase === PHASE.RUNNING) {
+        setStatus("Protegido");
+      } else if (phase === PHASE.RUNNING) {
+        setStatus("Jugando");
+      }
+
+      updateHud();
+    }
+
+    function drawCircle(x, y, radius, fill, glow, lineWidth = 3) {
+      context.save();
+      context.shadowColor = glow;
+      context.shadowBlur = visualProfile.circleGlow;
+      if (visualProfile.gradients) {
+        const gradient = context.createRadialGradient(
+          x - radius * 0.35,
+          y - radius * 0.4,
+          radius * 0.12,
+          x,
+          y,
+          radius
+        );
+        gradient.addColorStop(0, "#ffffff");
+        gradient.addColorStop(0.16, fill);
+        gradient.addColorStop(1, fill);
+        context.fillStyle = gradient;
+      } else {
+        context.fillStyle = fill;
+      }
+      context.beginPath();
+      context.arc(x, y, radius, 0, Math.PI * 2);
+      context.fill();
+      context.lineWidth = lineWidth;
+      context.strokeStyle = "rgba(255, 255, 255, 0.9)";
+      context.stroke();
+      context.restore();
+    }
+
+    function drawGuideTarget() {
+      if (guideTarget.state !== "active") {
+        return;
+      }
+
+      const pulse = 1 + Math.sin(performance.now() * 0.006) * 0.06;
+      const lifetimeMs = activeSettings.targetLifetimeSeconds * 1000;
+      const remainingRatio = clamp(guideTarget.remainingMs / lifetimeMs, 0, 1);
+
+      context.save();
+      drawCircle(
+        guideTarget.x,
+        guideTarget.y,
+        guideTarget.radius * pulse,
+        GAME_CONFIG.TARGET_COLOR,
+        "rgba(87, 238, 154, 0.9)",
+        4
+      );
+
+      context.strokeStyle = "rgba(255, 255, 255, 0.24)";
+      context.lineWidth = 5;
+      context.beginPath();
+      context.arc(guideTarget.x, guideTarget.y, guideTarget.radius + 12, 0, Math.PI * 2);
+      context.stroke();
+
+      context.strokeStyle = GAME_CONFIG.TARGET_COLOR;
+      context.shadowColor = GAME_CONFIG.TARGET_COLOR;
+      context.shadowBlur = visualProfile.targetRingGlow;
+      context.lineCap = "round";
+      context.beginPath();
+      context.arc(
+        guideTarget.x,
+        guideTarget.y,
+        guideTarget.radius + 12,
+        -Math.PI / 2,
+        -Math.PI / 2 + Math.PI * 2 * remainingRatio
+      );
+      context.stroke();
+
+      context.shadowBlur = 0;
+      context.fillStyle = "rgba(6, 38, 32, 0.68)";
+      context.beginPath();
+      context.arc(guideTarget.x, guideTarget.y, guideTarget.radius * 0.34, 0, Math.PI * 2);
+      context.fill();
+      context.lineWidth = 3;
+      context.strokeStyle = "rgba(255, 255, 255, 0.9)";
+      context.stroke();
+      context.restore();
+    }
+
+    function drawPlayer() {
+      const pulse = 1 + Math.sin(performance.now() * 0.005) * 0.035;
+      const alpha = protectionRemainingMs > 0 && Math.floor(protectionRemainingMs / 120) % 2 === 0 ? 0.42 : 1;
+
+      context.save();
+      context.globalAlpha = alpha;
+      drawCircle(
+        player.x,
+        player.y,
+        player.radius * pulse,
+        GAME_CONFIG.PLAYER_COLOR,
+        "rgba(56, 232, 255, 0.9)",
+        4
+      );
+
+      context.translate(player.x, player.y);
+      context.fillStyle = "#ffffff";
+      context.beginPath();
+      for (let point = 0; point < 8; point += 1) {
+        const angle = -Math.PI / 2 + point * Math.PI / 4;
+        const radius = point % 2 === 0 ? player.radius * 0.42 : player.radius * 0.18;
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius;
+        if (point === 0) context.moveTo(x, y);
+        else context.lineTo(x, y);
+      }
+      context.closePath();
+      context.fill();
+      context.restore();
+    }
+
+    function drawObstacle(obstacle) {
+      const isWarning = obstacle.state === "warning";
+      const flashProgress = (obstacle.warningElapsedMs % GAME_CONFIG.SPAWN_FLASH_CYCLE_MS) /
+        GAME_CONFIG.SPAWN_FLASH_CYCLE_MS;
+
+      context.save();
+      if (isWarning) {
+        context.globalAlpha = flashProgress < 0.55 ? 1 : 0.12;
+      }
+
+      drawCircle(
+        obstacle.x,
+        obstacle.y,
+        obstacle.radius,
+        obstacle.color,
+        `${obstacle.color}aa`,
+        3
+      );
+
+      context.save();
+      context.translate(obstacle.x, obstacle.y);
+      context.rotate(Math.PI / 4);
+      context.fillStyle = "rgba(8, 20, 38, 0.7)";
+      context.fillRect(-obstacle.radius * 0.1, -obstacle.radius * 0.48, obstacle.radius * 0.2, obstacle.radius * 0.96);
+      context.fillRect(-obstacle.radius * 0.48, -obstacle.radius * 0.1, obstacle.radius * 0.96, obstacle.radius * 0.2);
+      context.restore();
+
+      if (isWarning) {
+        context.save();
+        context.globalAlpha = flashProgress < 0.55 ? 0.95 : 0.28;
+        context.strokeStyle = "rgba(255, 255, 255, 0.92)";
+        context.lineWidth = 3;
+        context.setLineDash([8, 8]);
+        context.beginPath();
+        context.arc(obstacle.x, obstacle.y, obstacle.radius + 13, 0, Math.PI * 2);
+        context.stroke();
+        context.restore();
+      }
+
+      context.restore();
+    }
+
+    function drawScene() {
+      context.clearRect(0, 0, arenaWidth, arenaHeight);
+      drawGuideTarget();
+      for (const obstacle of obstacles) {
+        drawObstacle(obstacle);
+      }
+      drawPlayer();
+    }
+
+    function animationFrame(timestamp) {
+      if (lastFrameTimestamp === 0) {
+        lastFrameTimestamp = timestamp;
+      }
+      const deltaMs = Math.min(timestamp - lastFrameTimestamp, 100);
+      lastFrameTimestamp = timestamp;
+      updateGame(deltaMs);
+      drawScene();
+      window.requestAnimationFrame(animationFrame);
+    }
+
+    for (const button of presetButtons) {
+      button.addEventListener("click", () => {
+        selectPreset(button.dataset.preset);
+      });
+    }
+
+    for (const input of Object.values(settingInputs)) {
+      input.addEventListener("input", () => {
+        if (selectedPreset !== "custom") {
+          return;
+        }
+        customSettings = readCustomSettings();
+        updateSettingOutputs(customSettings);
+      });
+    }
+
+    for (const audioControl of [
+      soundEffectsToggle,
+      soundEffectsVolume,
+      musicToggle,
+      musicVolume
+    ]) {
+      audioControl.addEventListener("input", updateAudioSettings);
+    }
+
+    menuPlayButton.addEventListener("click", startConfiguredGame);
+    openSettingsButton.addEventListener("click", showSettingsScreen);
+    settingsBackButton.addEventListener("click", showMenuScreen);
+    saveSettingsButton.addEventListener("click", () => {
+      applySelectedConfiguration();
+      showMenuScreen();
+    });
+    settingsPlayButton.addEventListener("click", () => {
+      applySelectedConfiguration();
+      startConfiguredGame();
+    });
+
+    playShell.addEventListener("pointerdown", (event) => {
+      if (event.button === 2) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    });
+
+    playShell.addEventListener("click", (event) => {
+      if (event.button !== 0 || phase === PHASE.FINISHED) {
+        return;
+      }
+      event.preventDefault();
+      requestGamePointerLock();
+    });
+
+    playShell.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    });
+
+    playShell.addEventListener("auxclick", (event) => {
+      if (event.button === 2) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    });
+
+    document.addEventListener("mousemove", movePlayerFromLockedPointer);
+    document.addEventListener("pointerlockchange", handlePointerLockChange);
+    document.addEventListener("pointerlockerror", () => {
+      handlePointerLockRequestFailure(pointerLockAttemptId);
+    });
+
+    window.addEventListener("blur", () => {
+      pauseForPointerRelease();
+      if (document.pointerLockElement === playShell) {
+        document.exitPointerLock();
+      }
+    });
+
+    new ResizeObserver(resizeCanvas).observe(playShell);
+    updateAudioSettings();
+    selectPreset("initial");
+    showMenuScreen();
+    window.requestAnimationFrame(animationFrame);
+  </script>
+</body>
+</html>

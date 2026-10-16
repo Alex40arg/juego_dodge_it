@@ -114,3 +114,37 @@ Reloj continuo durante impactos y primera capa de audio.
 - La música se pausa junto con la pausa manual, continúa durante los impactos y se detiene al terminar o regresar al menú.
 - Configuración incorpora controles independientes para activar efectos y música, además de un volumen separado para cada canal.
 - Los controles de volumen quedan deshabilitados visual y funcionalmente al apagar su canal.
+
+## ver_12 — Estado previo documentado el 16 de octubre de 2026
+
+- Se documenta aquí trabajo que YA estaba presente en el HTML al comenzar esta tarea; no se implementó como parte del sistema de puntuaciones.
+- El juego ya incorporaba calidad visual Completa / Compatibilidad, con perfiles de dibujo independientes de la dificultad y de la simulación.
+- Compatibilidad ya utilizaba DPR 1, círculos sin gradientes ni resplandor y feedback verde mediante un borde de fondo transparente animado por opacidad.
+- Se conservaron las optimizaciones gráficas existentes y los ajustes manuales de CSS y textos, incluidos los márgenes y tamaños actuales.
+- La carpeta ya contenía `ver_11.html`. El estado actual completo, anterior a puntuaciones, se copió exactamente a `old_versions/ver_12.html`; SHA-256: `12EB3279C6D1807D0A0A22897559CD116070C7982D4BE4936D81001B2101AD50`.
+- Esta entrada registra el estado observado; no establece una fecha de implementación para esos cambios previos.
+
+## ver_13 — 16 de octubre de 2026
+
+- Se agregó el botón `Puntuaciones` al menú y una pantalla interna con selección independiente de Inicial, Medio, Avanzado y Personalizado, mensaje de historial vacío y botón para volver.
+- Se guarda el historial completo en `localStorage`, clave `esquiva_scores_v1`, como `{ version: 1, records: [...] }`. Cada resultado incluye versión, modo aplicado, fecha/hora ISO de finalización, metas, impactos, objetivos vencidos, mejor tramo en milisegundos, duración configurada y una copia de los ocho parámetros efectivos de la partida.
+- El modo aplicado se conserva por separado de la selección editable; al preparar cada partida se toma una copia de su modo y ajustes para registrar lo realmente usado.
+- Solo se guarda cuando una partida finita llega a cero desde juego o impacto, antes del reporte existente. Se evita repetir la finalización y el guardado; `Volver a probar` prepara un resultado nuevo. Abandonar y jugar sin límite no registran resultados.
+- El Top 10 se calcula al mostrar cada modo: metas descendentes, impactos ascendentes y fecha de finalización descendente. Todas las configuraciones personalizadas comparten un único ranking.
+- En Personalizado cada resultado tiene `Ver ajustes`, con un desplegable nativo que se abre y cierra y muestra los ocho parámetros con las mismas unidades de la configuración. La tabla principal mantiene cinco columnas legibles.
+- La lectura tolera almacenamiento vacío, JSON corrupto, registros incompletos y versiones desconocidas. Los registros no válidos se excluyen del ranking; los datos desconocidos se conservan al agregar resultados. Ante un documento corrupto o de versión incompatible no se sobrescribe el almacenamiento. Los fallos de lectura/escritura no interrumpen el juego y se informan en Puntuaciones.
+- Archivos: `index.html`, este `log.md` y la nueva copia `old_versions/ver_12.html`. Las versiones anteriores, `music.mp3` y el sitio publicado permanecen intactos.
+- Validación: compilación de JavaScript y pruebas automatizadas en Chrome headless con Playwright; partidas Inicial y Personalizada completadas acelerando el bucle existente, finalización de Medio y Avanzado durante impacto, guardado único y reintento independiente, abandono y sin límite excluidos, persistencia tras recargar, ajustes personalizados exactos y apertura/cierre del desplegable, los tres criterios del ranking y Top 10 con historial completo.
+- También se comprobaron JSON corrupto, registros incompletos, versiones futuras, lectura denegada y fallo de escritura; dibujo y DPR en Completa y Compatibilidad; pantalla de puntuaciones a 1366×768, 800×600 y 480×800; ausencia de errores JavaScript. Se verificó que todo el CSS anterior y las funciones ajenas al cambio se conservaron textualmente. `git diff --check` correcto.
+- Estado: implementación y validaciones automatizadas completas. Pendiente prueba humana de juego con Pointer Lock real, escucha de audio y revisión perceptual en Chrome/Edge y escalado de Windows; las pruebas automatizadas no reemplazan esas comprobaciones.
+
+## ver_14 — 16 de octubre de 2026
+
+- Copia exacta del estado anterior en `old_versions/ver_13.html`, verificada mediante SHA-256: `7092E46A9C780FC2583446BF01D0B4E3231FAAC6E049D63ABEEA97395ED7B0C8`.
+- Al terminar normalmente, la música activa reduce su volumen durante 3000 ms y después se detiene y reinicia su posición. Reintentar, pausar o volver al menú cancela cualquier fade pendiente; al reproducir nuevamente se recupera el volumen configurado. La música desactivada no se inicia para realizar el fade.
+- El reporte final incluye `Puesto X de Y · Categoría`, calculado después de guardar contra todo el historial válido de esa categoría con el mismo comparador del ranking, incluso si el resultado queda fuera del Top 10. Se identifica el registro recién agregado por su referencia para evitar confundirlo con un empate idéntico. Si falla el guardado, se informa que la partida no tiene posición.
+- El menú principal muestra `Versión 14` discretamente debajo de los botones. El comentario de versión del HTML se actualizó a `ver_14`.
+- El reporte final permite desplazamiento interno si su contenido supera la altura disponible. El CSS anterior se conserva íntegro; los nuevos estilos se limitan a la versión y el reporte.
+- Archivos afectados: `index.html`, `log.md` y nueva copia `old_versions/ver_13.html`.
+- Pruebas: sintaxis JavaScript, Chrome headless con reproducción real de `music.mp3`, volumen inicial 0,45 y aproximadamente 0,224 a los 1,5 s, detención después de 3 s, cancelación del fade al reintentar y volver al menú, música desactivada, puesto inicial, puesto 12 de 12 fuera del Top 10, Personalizado, empate idéntico, error de escritura sin posición falsa y persistencia tras recargar. Sin errores JavaScript; CSS anterior preservado y `git diff --check` correcto.
+- Pendiente: escucha humana del fadeout y revisión manual del reporte en los navegadores y escalas de pantalla habituales.
